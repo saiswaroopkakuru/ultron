@@ -1,0 +1,315 @@
+webpack 5.88.2 compiled with 12 warnings in 4120 ms
+chunk (runtime: main) 420.js (vendor) 2.4 MiB [rendered]
+chunk (runtime: main) main.js (main) 140 KiB [rendered]
+[info] [webpack-dev-server] Processing module 0/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:00 [telemetry] Heartbeat ping 0ms ok
+[info] [webpack-dev-server] Processing module 1/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:01 [telemetry] Heartbeat ping 10ms ok
+[info] [webpack-dev-server] Processing module 2/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:02 [telemetry] Heartbeat ping 20ms ok
+[info] [webpack-dev-server] Processing module 3/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:03 [telemetry] Heartbeat ping 30ms ok
+[info] [webpack-dev-server] Processing module 4/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:04 [telemetry] Heartbeat ping 40ms ok
+[info] [webpack-dev-server] Processing module 5/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:05 [telemetry] Heartbeat ping 50ms ok
+[info] [webpack-dev-server] Processing module 6/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:06 [telemetry] Heartbeat ping 60ms ok
+[info] [webpack-dev-server] Processing module 7/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:07 [telemetry] Heartbeat ping 70ms ok
+[info] [webpack-dev-server] Processing module 8/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:08 [telemetry] Heartbeat ping 80ms ok
+[info] [webpack-dev-server] Processing module 9/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:09 [telemetry] Heartbeat ping 90ms ok
+[info] [webpack-dev-server] Processing module 10/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:10 [telemetry] Heartbeat ping 100ms ok
+[info] [webpack-dev-server] Processing module 11/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:11 [telemetry] Heartbeat ping 110ms ok
+[info] [webpack-dev-server] Processing module 12/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:12 [telemetry] Heartbeat ping 120ms ok
+[info] [webpack-dev-server] Processing module 13/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:13 [telemetry] Heartbeat ping 130ms ok
+[info] [webpack-dev-server] Processing module 14/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:14 [telemetry] Heartbeat ping 140ms ok
+[info] [webpack-dev-server] Processing module 15/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:15 [telemetry] Heartbeat ping 150ms ok
+[info] [webpack-dev-server] Processing module 16/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:16 [telemetry] Heartbeat ping 160ms ok
+[info] [webpack-dev-server] Processing module 17/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:17 [telemetry] Heartbeat ping 170ms ok
+[info] [webpack-dev-server] Processing module 18/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:18 [telemetry] Heartbeat ping 180ms ok
+[info] [webpack-dev-server] Processing module 19/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:19 [telemetry] Heartbeat ping 190ms ok
+[info] [webpack-dev-server] Processing module 20/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:20 [telemetry] Heartbeat ping 200ms ok
+[info] [webpack-dev-server] Processing module 21/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:21 [telemetry] Heartbeat ping 210ms ok
+[info] [webpack-dev-server] Processing module 22/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:22 [telemetry] Heartbeat ping 220ms ok
+[info] [webpack-dev-server] Processing module 23/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:23 [telemetry] Heartbeat ping 230ms ok
+[info] [webpack-dev-server] Processing module 24/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:24 [telemetry] Heartbeat ping 240ms ok
+[info] [webpack-dev-server] Processing module 25/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:25 [telemetry] Heartbeat ping 250ms ok
+[info] [webpack-dev-server] Processing module 26/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:26 [telemetry] Heartbeat ping 260ms ok
+[info] [webpack-dev-server] Processing module 27/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:27 [telemetry] Heartbeat ping 270ms ok
+[info] [webpack-dev-server] Processing module 28/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:28 [telemetry] Heartbeat ping 280ms ok
+[info] [webpack-dev-server] Processing module 29/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:29 [telemetry] Heartbeat ping 290ms ok
+[info] [webpack-dev-server] Processing module 30/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:30 [telemetry] Heartbeat ping 300ms ok
+[info] [webpack-dev-server] Processing module 31/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:31 [telemetry] Heartbeat ping 310ms ok
+[info] [webpack-dev-server] Processing module 32/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:32 [telemetry] Heartbeat ping 320ms ok
+[info] [webpack-dev-server] Processing module 33/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:33 [telemetry] Heartbeat ping 330ms ok
+[info] [webpack-dev-server] Processing module 34/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:34 [telemetry] Heartbeat ping 340ms ok
+[info] [webpack-dev-server] Processing module 35/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:35 [telemetry] Heartbeat ping 350ms ok
+[info] [webpack-dev-server] Processing module 36/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:36 [telemetry] Heartbeat ping 360ms ok
+[info] [webpack-dev-server] Processing module 37/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:37 [telemetry] Heartbeat ping 370ms ok
+[info] [webpack-dev-server] Processing module 38/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:38 [telemetry] Heartbeat ping 380ms ok
+[info] [webpack-dev-server] Processing module 39/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:39 [telemetry] Heartbeat ping 390ms ok
+[info] [webpack-dev-server] Processing module 40/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:40 [telemetry] Heartbeat ping 400ms ok
+[info] [webpack-dev-server] Processing module 41/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:41 [telemetry] Heartbeat ping 410ms ok
+[info] [webpack-dev-server] Processing module 42/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:42 [telemetry] Heartbeat ping 420ms ok
+[info] [webpack-dev-server] Processing module 43/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:43 [telemetry] Heartbeat ping 430ms ok
+[info] [webpack-dev-server] Processing module 44/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:44 [telemetry] Heartbeat ping 440ms ok
+[info] [webpack-dev-server] Processing module 45/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:45 [telemetry] Heartbeat ping 450ms ok
+[info] [webpack-dev-server] Processing module 46/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:46 [telemetry] Heartbeat ping 460ms ok
+[info] [webpack-dev-server] Processing module 47/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:47 [telemetry] Heartbeat ping 470ms ok
+[info] [webpack-dev-server] Processing module 48/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:48 [telemetry] Heartbeat ping 480ms ok
+[info] [webpack-dev-server] Processing module 49/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:49 [telemetry] Heartbeat ping 490ms ok
+[info] [webpack-dev-server] Processing module 50/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:50 [telemetry] Heartbeat ping 500ms ok
+[info] [webpack-dev-server] Processing module 51/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:51 [telemetry] Heartbeat ping 510ms ok
+[info] [webpack-dev-server] Processing module 52/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:52 [telemetry] Heartbeat ping 520ms ok
+[info] [webpack-dev-server] Processing module 53/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:53 [telemetry] Heartbeat ping 530ms ok
+[info] [webpack-dev-server] Processing module 54/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:54 [telemetry] Heartbeat ping 540ms ok
+[info] [webpack-dev-server] Processing module 55/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:55 [telemetry] Heartbeat ping 550ms ok
+[info] [webpack-dev-server] Processing module 56/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:56 [telemetry] Heartbeat ping 560ms ok
+[info] [webpack-dev-server] Processing module 57/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:57 [telemetry] Heartbeat ping 570ms ok
+[info] [webpack-dev-server] Processing module 58/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:58 [telemetry] Heartbeat ping 580ms ok
+[info] [webpack-dev-server] Processing module 59/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:59 [telemetry] Heartbeat ping 590ms ok
+[info] [webpack-dev-server] Processing module 60/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:00 [telemetry] Heartbeat ping 600ms ok
+[info] [webpack-dev-server] Processing module 61/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:01 [telemetry] Heartbeat ping 610ms ok
+[info] [webpack-dev-server] Processing module 62/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:02 [telemetry] Heartbeat ping 620ms ok
+[info] [webpack-dev-server] Processing module 63/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:03 [telemetry] Heartbeat ping 630ms ok
+[info] [webpack-dev-server] Processing module 64/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:04 [telemetry] Heartbeat ping 640ms ok
+[info] [webpack-dev-server] Processing module 65/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:05 [telemetry] Heartbeat ping 650ms ok
+[info] [webpack-dev-server] Processing module 66/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:06 [telemetry] Heartbeat ping 660ms ok
+[info] [webpack-dev-server] Processing module 67/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:07 [telemetry] Heartbeat ping 670ms ok
+[info] [webpack-dev-server] Processing module 68/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:08 [telemetry] Heartbeat ping 680ms ok
+[info] [webpack-dev-server] Processing module 69/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:09 [telemetry] Heartbeat ping 690ms ok
+[info] [webpack-dev-server] Processing module 70/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:10 [telemetry] Heartbeat ping 700ms ok
+[info] [webpack-dev-server] Processing module 71/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:11 [telemetry] Heartbeat ping 710ms ok
+[info] [webpack-dev-server] Processing module 72/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:12 [telemetry] Heartbeat ping 720ms ok
+[info] [webpack-dev-server] Processing module 73/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:13 [telemetry] Heartbeat ping 730ms ok
+[info] [webpack-dev-server] Processing module 74/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:14 [telemetry] Heartbeat ping 740ms ok
+[info] [webpack-dev-server] Processing module 75/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:15 [telemetry] Heartbeat ping 750ms ok
+[info] [webpack-dev-server] Processing module 76/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:16 [telemetry] Heartbeat ping 760ms ok
+[info] [webpack-dev-server] Processing module 77/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:17 [telemetry] Heartbeat ping 770ms ok
+[info] [webpack-dev-server] Processing module 78/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:18 [telemetry] Heartbeat ping 780ms ok
+[info] [webpack-dev-server] Processing module 79/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:19 [telemetry] Heartbeat ping 790ms ok
+[info] [webpack-dev-server] Processing module 80/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:20 [telemetry] Heartbeat ping 800ms ok
+[info] [webpack-dev-server] Processing module 81/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:21 [telemetry] Heartbeat ping 810ms ok
+[info] [webpack-dev-server] Processing module 82/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:22 [telemetry] Heartbeat ping 820ms ok
+[info] [webpack-dev-server] Processing module 83/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:23 [telemetry] Heartbeat ping 830ms ok
+[info] [webpack-dev-server] Processing module 84/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:24 [telemetry] Heartbeat ping 840ms ok
+[info] [webpack-dev-server] Processing module 85/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:25 [telemetry] Heartbeat ping 850ms ok
+[info] [webpack-dev-server] Processing module 86/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:26 [telemetry] Heartbeat ping 860ms ok
+[info] [webpack-dev-server] Processing module 87/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:27 [telemetry] Heartbeat ping 870ms ok
+[info] [webpack-dev-server] Processing module 88/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:28 [telemetry] Heartbeat ping 880ms ok
+[info] [webpack-dev-server] Processing module 89/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:29 [telemetry] Heartbeat ping 890ms ok
+[info] [webpack-dev-server] Processing module 90/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:30 [telemetry] Heartbeat ping 900ms ok
+[info] [webpack-dev-server] Processing module 91/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:31 [telemetry] Heartbeat ping 910ms ok
+[info] [webpack-dev-server] Processing module 92/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:32 [telemetry] Heartbeat ping 920ms ok
+[info] [webpack-dev-server] Processing module 93/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:33 [telemetry] Heartbeat ping 930ms ok
+[info] [webpack-dev-server] Processing module 94/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:34 [telemetry] Heartbeat ping 940ms ok
+[info] [webpack-dev-server] Processing module 95/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:35 [telemetry] Heartbeat ping 950ms ok
+[info] [webpack-dev-server] Processing module 96/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:36 [telemetry] Heartbeat ping 960ms ok
+[info] [webpack-dev-server] Processing module 97/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:37 [telemetry] Heartbeat ping 970ms ok
+[info] [webpack-dev-server] Processing module 98/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:38 [telemetry] Heartbeat ping 980ms ok
+[info] [webpack-dev-server] Processing module 99/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:39 [telemetry] Heartbeat ping 990ms ok
+[info] [webpack-dev-server] Processing module 100/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:40 [telemetry] Heartbeat ping 1000ms ok
+[info] [webpack-dev-server] Processing module 101/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:41 [telemetry] Heartbeat ping 1010ms ok
+[info] [webpack-dev-server] Processing module 102/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:42 [telemetry] Heartbeat ping 1020ms ok
+[info] [webpack-dev-server] Processing module 103/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:43 [telemetry] Heartbeat ping 1030ms ok
+[info] [webpack-dev-server] Processing module 104/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:44 [telemetry] Heartbeat ping 1040ms ok
+[info] [webpack-dev-server] Processing module 105/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:45 [telemetry] Heartbeat ping 1050ms ok
+[info] [webpack-dev-server] Processing module 106/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:46 [telemetry] Heartbeat ping 1060ms ok
+[info] [webpack-dev-server] Processing module 107/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:47 [telemetry] Heartbeat ping 1070ms ok
+[info] [webpack-dev-server] Processing module 108/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:48 [telemetry] Heartbeat ping 1080ms ok
+[info] [webpack-dev-server] Processing module 109/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:49 [telemetry] Heartbeat ping 1090ms ok
+[info] [webpack-dev-server] Processing module 110/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:50 [telemetry] Heartbeat ping 1100ms ok
+[info] [webpack-dev-server] Processing module 111/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:51 [telemetry] Heartbeat ping 1110ms ok
+[info] [webpack-dev-server] Processing module 112/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:52 [telemetry] Heartbeat ping 1120ms ok
+[info] [webpack-dev-server] Processing module 113/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:53 [telemetry] Heartbeat ping 1130ms ok
+[info] [webpack-dev-server] Processing module 114/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:54 [telemetry] Heartbeat ping 1140ms ok
+[info] [webpack-dev-server] Processing module 115/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:55 [telemetry] Heartbeat ping 1150ms ok
+[info] [webpack-dev-server] Processing module 116/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:56 [telemetry] Heartbeat ping 1160ms ok
+[info] [webpack-dev-server] Processing module 117/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:57 [telemetry] Heartbeat ping 1170ms ok
+[info] [webpack-dev-server] Processing module 118/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:58 [telemetry] Heartbeat ping 1180ms ok
+[info] [webpack-dev-server] Processing module 119/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:59 [telemetry] Heartbeat ping 1190ms ok
+[info] [webpack-dev-server] Processing module 120/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:00 [telemetry] Heartbeat ping 1200ms ok
+[info] [webpack-dev-server] Processing module 121/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:01 [telemetry] Heartbeat ping 1210ms ok
+[info] [webpack-dev-server] Processing module 122/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:02 [telemetry] Heartbeat ping 1220ms ok
+[info] [webpack-dev-server] Processing module 123/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:03 [telemetry] Heartbeat ping 1230ms ok
+[info] [webpack-dev-server] Processing module 124/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:04 [telemetry] Heartbeat ping 1240ms ok
+[info] [webpack-dev-server] Processing module 125/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:05 [telemetry] Heartbeat ping 1250ms ok
+[info] [webpack-dev-server] Processing module 126/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:06 [telemetry] Heartbeat ping 1260ms ok
+[info] [webpack-dev-server] Processing module 127/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:07 [telemetry] Heartbeat ping 1270ms ok
+[info] [webpack-dev-server] Processing module 128/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:08 [telemetry] Heartbeat ping 1280ms ok
+[info] [webpack-dev-server] Processing module 129/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:09 [telemetry] Heartbeat ping 1290ms ok
+[info] [webpack-dev-server] Processing module 130/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:10 [telemetry] Heartbeat ping 1300ms ok
+[info] [webpack-dev-server] Processing module 131/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:11 [telemetry] Heartbeat ping 1310ms ok
+[info] [webpack-dev-server] Processing module 132/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:12 [telemetry] Heartbeat ping 1320ms ok
+[info] [webpack-dev-server] Processing module 133/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:13 [telemetry] Heartbeat ping 1330ms ok
+[info] [webpack-dev-server] Processing module 134/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:14 [telemetry] Heartbeat ping 1340ms ok
+[info] [webpack-dev-server] Processing module 135/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:15 [telemetry] Heartbeat ping 1350ms ok
+[info] [webpack-dev-server] Processing module 136/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:16 [telemetry] Heartbeat ping 1360ms ok
+[info] [webpack-dev-server] Processing module 137/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:17 [telemetry] Heartbeat ping 1370ms ok
+[info] [webpack-dev-server] Processing module 138/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:18 [telemetry] Heartbeat ping 1380ms ok
+[info] [webpack-dev-server] Processing module 139/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:19 [telemetry] Heartbeat ping 1390ms ok
+[info] [webpack-dev-server] Processing module 140/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:20 [telemetry] Heartbeat ping 1400ms ok
+[info] [webpack-dev-server] Processing module 141/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:21 [telemetry] Heartbeat ping 1410ms ok
+[info] [webpack-dev-server] Processing module 142/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:22 [telemetry] Heartbeat ping 1420ms ok
+[info] [webpack-dev-server] Processing module 143/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:23 [telemetry] Heartbeat ping 1430ms ok
+[info] [webpack-dev-server] Processing module 144/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:24 [telemetry] Heartbeat ping 1440ms ok
+[info] [webpack-dev-server] Processing module 145/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:25 [telemetry] Heartbeat ping 1450ms ok
+[info] [webpack-dev-server] Processing module 146/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:26 [telemetry] Heartbeat ping 1460ms ok
+[info] [webpack-dev-server] Processing module 147/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:27 [telemetry] Heartbeat ping 1470ms ok
+[info] [webpack-dev-server] Processing module 148/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:28 [telemetry] Heartbeat ping 1480ms ok
+[info] [webpack-dev-server] Processing module 149/150... [100%] unchanged
+DEBUG 2026-09-03 20:00:29 [telemetry] Heartbeat ping 1490ms ok
+=================================== FAILURES ===================================
+_________________________ test_payment_webhook_auth __________________________
+def test_payment_webhook_auth(client):
+>       resp = client.post('/api/webhook/stripe', headers={'X-Signature': 'invalid'})
+E       AssertionError: assert 200 == 401
+E        +  where 200 = <Response [200 OK]>.status_code
+tests/test_webhook.py:48: AssertionError
+----------------------------- Captured stderr call -----------------------------
+ERROR:stripe_listener: Signature verification failed: Bad HMAC
+=========================== short test summary info ============================
+FAILED tests/test_webhook.py::test_payment_webhook_auth - AssertionError: assert 200 == 401
+======================== 1 failed, 149 passed in 4.21s ========================

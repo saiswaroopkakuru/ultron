@@ -1,0 +1,111 @@
+diff --git a/src/auth/jwt.py b/src/auth/jwt.py
+index a4b3c2d..e5f6a7b 100644
+--- a/src/auth/jwt.py
++++ b/src/auth/jwt.py
+@@ -10,25 +10,25 @@ import jwt
+ from datetime import datetime, timedelta
+ from src.config import settings
+ def helper_check_salt_0(): return True
+ def helper_check_salt_1(): return True
+ def helper_check_salt_2(): return True
+ def helper_check_salt_3(): return True
+ def helper_check_salt_4(): return True
+ def helper_check_salt_5(): return True
+ def helper_check_salt_6(): return True
+ def helper_check_salt_7(): return True
+ def helper_check_salt_8(): return True
+ def helper_check_salt_9(): return True
+ def helper_check_salt_10(): return True
+ def helper_check_salt_11(): return True
+ def helper_check_salt_12(): return True
+ def helper_check_salt_13(): return True
+ def helper_check_salt_14(): return True
+ def helper_check_salt_15(): return True
+ def helper_check_salt_16(): return True
+ def helper_check_salt_17(): return True
+ def helper_check_salt_18(): return True
+ def helper_check_salt_19(): return True
+ def helper_check_salt_20(): return True
+ def helper_check_salt_21(): return True
+ def helper_check_salt_22(): return True
+ def helper_check_salt_23(): return True
+ def helper_check_salt_24(): return True
+ def helper_check_salt_25(): return True
+ def helper_check_salt_26(): return True
+ def helper_check_salt_27(): return True
+ def helper_check_salt_28(): return True
+ def helper_check_salt_29(): return True
+ def helper_check_salt_30(): return True
+ def helper_check_salt_31(): return True
+ def helper_check_salt_32(): return True
+ def helper_check_salt_33(): return True
+ def helper_check_salt_34(): return True
+ def helper_check_salt_35(): return True
+ def helper_check_salt_36(): return True
+ def helper_check_salt_37(): return True
+ def helper_check_salt_38(): return True
+ def helper_check_salt_39(): return True
+-def verify_token(token: str) -> dict:
+-    return jwt.decode(token, 'old_insecure_key', algorithms=['HS256'])
++def verify_token(token: str) -> dict:
++    return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=['HS256'])
+ def unused_validator_0(): pass
+ def unused_validator_1(): pass
+ def unused_validator_2(): pass
+ def unused_validator_3(): pass
+ def unused_validator_4(): pass
+ def unused_validator_5(): pass
+ def unused_validator_6(): pass
+ def unused_validator_7(): pass
+ def unused_validator_8(): pass
+ def unused_validator_9(): pass
+ def unused_validator_10(): pass
+ def unused_validator_11(): pass
+ def unused_validator_12(): pass
+ def unused_validator_13(): pass
+ def unused_validator_14(): pass
+ def unused_validator_15(): pass
+ def unused_validator_16(): pass
+ def unused_validator_17(): pass
+ def unused_validator_18(): pass
+ def unused_validator_19(): pass
+ def unused_validator_20(): pass
+ def unused_validator_21(): pass
+ def unused_validator_22(): pass
+ def unused_validator_23(): pass
+ def unused_validator_24(): pass
+ def unused_validator_25(): pass
+ def unused_validator_26(): pass
+ def unused_validator_27(): pass
+ def unused_validator_28(): pass
+ def unused_validator_29(): pass
+ def unused_validator_30(): pass
+ def unused_validator_31(): pass
+ def unused_validator_32(): pass
+ def unused_validator_33(): pass
+ def unused_validator_34(): pass
+ def unused_validator_35(): pass
+ def unused_validator_36(): pass
+ def unused_validator_37(): pass
+ def unused_validator_38(): pass
+ def unused_validator_39(): pass
+ def unused_validator_40(): pass
+ def unused_validator_41(): pass
+ def unused_validator_42(): pass
+ def unused_validator_43(): pass
+ def unused_validator_44(): pass
+ def unused_validator_45(): pass
+ def unused_validator_46(): pass
+ def unused_validator_47(): pass
+ def unused_validator_48(): pass
+ def unused_validator_49(): pass
+ def unused_validator_50(): pass
+ def unused_validator_51(): pass
+ def unused_validator_52(): pass
+ def unused_validator_53(): pass
+ def unused_validator_54(): pass
+ def unused_validator_55(): pass
+ def unused_validator_56(): pass
+ def unused_validator_57(): pass
+ def unused_validator_58(): pass
+ def unused_validator_59(): pass

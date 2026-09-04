@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ultron-optimizer": {
+      "command": "python",
+      "args": ["-m", "ultron.cli", "mcp"],
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}

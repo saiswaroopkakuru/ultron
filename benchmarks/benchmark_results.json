@@ -1,0 +1,29 @@
+[
+  {
+    "scenario": "Terminal Build & Test Log",
+    "raw_tokens": 2350,
+    "ultron_tokens": 641,
+    "input_reduction_pct": 72.1,
+    "total_reduction_pct": 72.72,
+    "precision_pct": 100.0,
+    "speedup": 4.46
+  },
+  {
+    "scenario": "Large Git Diff Patch",
+    "raw_tokens": 1363,
+    "ultron_tokens": 514,
+    "input_reduction_pct": 74.93,
+    "total_reduction_pct": 62.29,
+    "precision_pct": 70.0,
+    "speedup": 0.99
+  },
+  {
+    "scenario": "ClaudeMem Cross-Session Memory",
+    "raw_tokens": 1625,
+    "ultron_tokens": 570,
+    "input_reduction_pct": 84.0,
+    "total_reduction_pct": 64.92,
+    "precision_pct": 100.0,
+    "speedup": 1.25
+  }
+]
