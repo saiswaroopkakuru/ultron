@@ -24,6 +24,17 @@ UNIFIED_DIFF_REGEX = re.compile(r"^--- .*\n\+\+\+ ", re.M)
 # (piped through grep or head) still must not be treated as a log.
 HUNK_HEADER_REGEX = re.compile(r"^@@ .*@@", re.M)
 
+# Build and test runners, log levels, timestamps, and pytest banners, anchored to the
+# start of a line. Substring matching was the bug this replaces: a resume listing
+# "pytest" under skills, or any prose containing "error:", was routed to the log pruner
+# and came back as a handful of lines.
+LOG_SIGNATURE_REGEX = re.compile(
+    r"^\s*(?:npm |yarn |pnpm |webpack|vite |pytest|cargo |gradle|mvn |make |tsc |go test|docker |"
+    r"Traceback \(most recent call last\):|ERROR|WARN|WARNING|INFO|DEBUG|FATAL|"
+    r"\[\d{4}-\d{2}-\d{2}|={5,}\s*(?:FAILURES|ERRORS|short test summary|test session starts))",
+    re.M,
+)
+
 ANSI_REGEX = re.compile(r"\x1B(?:\[[0-?]*[ -/]*[@-~]|\].*?\x07)")
 PROGRESS_REGEX = re.compile(r"(\r[^\n]*)+")
 
@@ -266,6 +277,18 @@ class PrunerEngine:
         shapes = Counter(DIGIT_RUN_REGEX.sub("#", ln)[:80] for ln in lines)
         return shapes.most_common(1)[0][1] / len(lines) > 0.3 or len(shapes) / len(lines) < 0.5
 
+    def looks_like_build_log(self, text: str) -> bool:
+        """
+        Positive identification of a build or test log, required before the log
+        pruner runs. That pruner keeps a few lines and drops the rest, so it has
+        to be reserved for output that is genuinely repetitive machine noise:
+        a runner or log-level line at the start of a line, plus enough lines that
+        pruning is worth the breadcrumb roundtrip.
+        """
+        if not LOG_SIGNATURE_REGEX.search(text):
+            return False
+        return len([ln for ln in text.splitlines() if ln.strip()]) >= 40
+
     def looks_like_diff(self, text: str) -> bool:
         """
         True for any unified diff, wherever it starts in the output. The log
@@ -278,30 +301,42 @@ class PrunerEngine:
             line.startswith("+") or line.startswith("-") for line in text.splitlines()
         )
 
+    def _passthrough(self, text: str, reason: str) -> Tuple[str, Dict[str, Any]]:
+        size = len(text)
+        return text, {"savings_pct": 0.0, "raw_bytes": size, "compressed_bytes": size,
+                      "skipped": reason}
+
     def prune_tool_output(self, text: str) -> Tuple[str, Dict[str, Any]]:
-        """Universal router that inspects tool output content and routes to the best pruner."""
+        """
+        Routes tool output to a pruner, and only on positive identification.
+
+        Anything this cannot name -- prose, tables, config, CSV, a format nobody
+        anticipated -- is passed through byte-identical. The earlier default was the
+        reverse: unrecognized text fell into a lossy pruner, so a wrong guess deleted
+        content silently instead of degrading. Pruning is worth having only where the
+        shape of the input is known well enough to say what is safe to drop.
+        """
         if not text or len(text) < 120:
             size = len(text) if text else 0
             return text, {"savings_pct": 0.0, "raw_bytes": size, "compressed_bytes": size}
 
-        # Git diffs
+        # Diff first: a patch of source code is still a diff, and collapsing its
+        # unchanged runs keeps every +/- line. Checking source first swallowed it.
         if self.looks_like_diff(text):
             res, meta = self.prune_git_diff(text)
+        elif self.looks_like_source_code(text):
+            # Exact bytes matter more than any saving here.
+            res, meta = self._passthrough(text, "source_code")
         elif (text.strip().startswith("{") and text.strip().endswith("}")) or (text.strip().startswith("[") and text.strip().endswith("]")):
             try:
                 json.loads(text.strip())
                 res, meta = self.prune_json(text.strip())
             except Exception:
-                res, meta = self.prune_document_text(text)
-        elif self.looks_like_source_code(text):
-            # Exact bytes matter more than any saving here.
-            res, meta = text, {"savings_pct": 0.0, "raw_bytes": len(text),
-                               "compressed_bytes": len(text), "skipped": "source_code"}
-        elif (any(k in text.lower() for k in ["npm", "yarn", "pnpm", "webpack", "vite", "pytest", "cargo", "gradle", "traceback (", "error:"])
-                or self.looks_like_repetitive_log(text)):
+                res, meta = self._passthrough(text, "unrecognized")
+        elif self.looks_like_build_log(text):
             res, meta = self.prune_build_or_test_log(text)
         else:
-            res, meta = self.prune_document_text(text)
+            res, meta = self._passthrough(text, "unrecognized")
 
         if meta.get("savings_pct", 0.0) > 0:
             try:

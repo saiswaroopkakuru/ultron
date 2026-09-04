@@ -77,6 +77,62 @@ def test_pruner_git_diff_compression():
     assert "new_value = 2" in compressed
     assert "unchanged lines" in compressed
 
+def test_prose_is_passed_through_untouched():
+    """
+    A resume mentioning pytest under skills was routed to the log pruner and came
+    back as six lines. Unrecognized text must reach the model byte-identical.
+    """
+    resume = "\n".join([
+        "Venkata Sai Swaroop Kakuru",
+        "Software Engineer | Python, LLM Integration and RAG",
+        "SUMMARY",
+        "Software Engineer with 4+ years in Python shipping production systems.",
+        "WORK EXPERIENCE",
+        "Serve the fraud models in production on Amazon EKS at 100,000+ transactions a day.",
+        "Inference cost came down through profiling first and quantizing second.",
+        "SKILLS",
+        "Quality and Risk: pytest, load testing, fault-injection drills, SonarQube in CI",
+        "Cloud: AWS (EKS, Lambda, S3, IAM), Docker, Kubernetes, Terraform",
+    ])
+
+    out, meta = pruner.prune_tool_output(resume)
+
+    assert out == resume
+    assert meta["skipped"] == "unrecognized"
+    assert meta["savings_pct"] == 0.0
+
+
+def test_table_output_is_passed_through_untouched():
+    """Repetitive line shapes are not permission to drop rows."""
+    table = "\n".join([f"| row_{i:03d} | value_{i} | ok |" for i in range(60)])
+
+    out, meta = pruner.prune_tool_output(table)
+
+    assert out == table
+    assert meta["skipped"] == "unrecognized"
+
+
+def test_real_build_log_is_still_pruned():
+    """The whitelist must still admit what it was built for."""
+    log = "\n".join([f"webpack [info] building module {i}/60... [100%]" for i in range(60)])
+    log += "\nERROR: src/api/user.ts(42,10): Property 'id' does not exist on type 'User'."
+
+    compressed, meta = pruner.prune_tool_output(log)
+
+    assert meta["type"] == "build_log"
+    assert "ERROR: src/api/user.ts" in compressed
+
+
+def test_short_log_is_not_pruned():
+    """Below the line threshold the breadcrumb roundtrip costs more than it saves."""
+    log = "\n".join([f"pytest collected item {i}" for i in range(12)])
+
+    out, meta = pruner.prune_tool_output(log)
+
+    assert out == log
+    assert meta["skipped"] == "unrecognized"
+
+
 def _unified_diff_body():
     lines = ["--- installed", "+++ repo", "@@ -2,14 +2,15 @@"]
     lines.extend([f" context_line_{i} = {i}" for i in range(30)])
@@ -105,6 +161,31 @@ def test_router_detects_diff_without_file_headers():
 
     assert meta["type"] == "git_diff"
     assert "+description: new wording that must survive pruning" in compressed
+
+
+def test_diff_of_source_code_routes_to_diff_pruner():
+    """
+    A patch is mostly source lines, so the source guard claims it if it runs first.
+    Diff pruning keeps every +/- line, so the diff check has to win.
+    """
+    diff = "\n".join([
+        "diff --git a/service.py b/service.py",
+        "--- a/service.py",
+        "+++ b/service.py",
+        "@@ -1,40 +1,40 @@",
+        "import os",
+        "from typing import Dict",
+        "",
+    ] + [f"    value_{i} = compute({i})" for i in range(40)] + [
+        "-    return legacy_path(value_0)",
+        "+    return new_path(value_0)",
+    ])
+
+    compressed, meta = pruner.prune_tool_output(diff)
+
+    assert meta["type"] == "git_diff", f"routed to {meta.get('type') or meta.get('skipped')}"
+    assert "+    return new_path(value_0)" in compressed
+    assert "-    return legacy_path(value_0)" in compressed
 
 
 def test_router_still_treats_plain_log_as_log():

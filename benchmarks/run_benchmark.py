@@ -71,6 +71,21 @@ def build_json_payload():
     }, indent=2)
 
 
+def prose_document():
+    """
+    Text the router has no rule for, carrying words that used to trigger the log
+    pruner by substring. It must come back byte-identical.
+    """
+    return "\n".join([
+        "Quarterly platform review",
+        "",
+        "The scoring service held its latency budget through the December peak, with one",
+        "exception on the 14th traced to a cold cache after a deploy.",
+        "Test tooling: pytest for unit and integration suites, load testing before release.",
+        "Open question: whether the error: prefix in the legacy parser should be retained.",
+    ] * 8)
+
+
 # Lines that carry the answer. If pruning drops these, the reduction is worthless.
 LOG_SIGNALS = [
     "AssertionError: assert 200 == 401",
@@ -149,6 +164,8 @@ def main():
         run_scenario("Source code (pruner.py)", source_code, pruner, store, [],
                      expect_passthrough=True),
         run_scenario("JSON API response", json_payload, pruner, store, JSON_SIGNALS),
+        run_scenario("Prose document", prose_document(), pruner, store, [],
+                     expect_passthrough=True),
     ]
 
     RESULTS_FILE.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")

@@ -31,10 +31,10 @@
   },
   {
     "scenario": "Source code (pruner.py)",
-    "raw_bytes": 13921,
-    "pruned_bytes": 13921,
-    "raw_tokens": 3480,
-    "pruned_tokens": 3480,
+    "raw_bytes": 15702,
+    "pruned_bytes": 15702,
+    "raw_tokens": 3926,
+    "pruned_tokens": 3926,
     "token_method": "estimate(chars/4)",
     "reduction_pct": 0.0,
     "signal_kept_pct": 100.0,
@@ -58,5 +58,20 @@
     "byte_identical_passthrough": false,
     "expected_passthrough": false,
     "route": "json"
+  },
+  {
+    "scenario": "Prose document",
+    "raw_bytes": 2663,
+    "pruned_bytes": 2663,
+    "raw_tokens": 666,
+    "pruned_tokens": 666,
+    "token_method": "estimate(chars/4)",
+    "reduction_pct": 0.0,
+    "signal_kept_pct": 100.0,
+    "missing_signals": [],
+    "roundtrip_byte_exact": true,
+    "byte_identical_passthrough": true,
+    "expected_passthrough": true,
+    "route": "unrecognized"
   }
 ]

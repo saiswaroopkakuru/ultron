@@ -29,13 +29,19 @@ Existing tools operate either at the **network proxy layer** (requiring TLS cert
 Ultron operates **directly at the in-process tool boundary** via Claude Code's native `PostToolUse` hook:
 
 1. **Zero Proxy Latency (hook path)**: The `PostToolUse` hook itself needs no local HTTP proxy or network redirect -- it intercepts tool results (`Bash`, `Read`, `Grep`, MCP) in-process, right before Claude Code serializes them into context. (Ultron separately ships an *optional* local proxy for zero-cost local-model routing, unrelated to pruning -- see the "Optional: OmniRoute Gateway" section below.)
-2. **Deterministic Context Pruning**:
+2. **Pruning only on positive identification**: Output is pruned when the router can name
+   its shape -- a unified diff, valid JSON, or a build/test log identified by a runner or
+   log-level line at the start of a line plus at least 40 lines. Everything else, including
+   source code, prose, tables, config, and CSV, passes through byte-identical. An earlier
+   default did the reverse and pruned whatever it could not name, so a wrong guess deleted
+   content silently rather than degrading.
+3. **Deterministic Context Pruning**:
    - **Logs**: Strips ANSI escape codes and progress bars; preserves compiler errors, tracebacks, and summary outcomes while collapsing module compilation spam.
    - **Git Diffs**: Collapses long runs of unchanged context lines (`[... N unchanged lines ...]`), while keeping all hunks (`@@`) and added/removed lines.
    - **JSON**: Prunes repetitive array elements and deeply nested objects.
-3. **Reversible Breadcrumbs**: Full uncompressed tool outputs are stored in a local SQLite database (`~/.ultron/memory.db`) with content-addressed SHA-256 hashes (`[ultron:ref:hash:NL:NB]`).
-4. **100% Byte-Exact Recovery**: If Claude or the developer needs to inspect the full uncompressed log, `/ultron expand <hash>` or MCP tool `ultron_expand_breadcrumb` instantly restores the original text.
-5. **Skill Hints (optional)**: Matches keywords in the intercepted output and appends one
+4. **Reversible Breadcrumbs**: Full uncompressed tool outputs are stored in a local SQLite database (`~/.ultron/memory.db`) with content-addressed SHA-256 hashes (`[ultron:ref:hash:NL:NB]`).
+5. **100% Byte-Exact Recovery**: If Claude or the developer needs to inspect the full uncompressed log, `/ultron expand <hash>` or MCP tool `ultron_expand_breadcrumb` instantly restores the original text.
+6. **Skill Hints (optional)**: Matches keywords in the intercepted output and appends one
    short line naming a relevant skill — for example pointing at `tdd-workflow` after a test
    failure. It reads `~/.claude/skills/`, so it only names skills already installed on your
    machine, and stays silent when it finds none. This is a suggestion string appended to the
@@ -131,7 +137,7 @@ When registered with Claude Code or Cursor, Ultron provides:
 
 ## 📊 Measured Results
 
-`benchmarks/run_benchmark.py` runs the pruner over four checked-in fixtures. It is
+`benchmarks/run_benchmark.py` runs the pruner over five checked-in fixtures. It is
 deterministic — no model, no network — so anyone gets these numbers on this commit:
 
 ```bash
@@ -143,7 +149,8 @@ python benchmarks/run_benchmark.py
 | Build & test log | 21,314 B | 1,561 B | **92.7%** | 100% | byte-exact |
 | Git diff | 4,053 B | 443 B | **89.1%** | 100% | byte-exact |
 | JSON API response | 29,613 B | 261 B | **99.1%** | 100% | byte-exact |
-| Source code (`ultron/core/pruner.py`) | — | — | **0%** | 100% | passed through |
+| Source code (`ultron/core/pruner.py`) | -- | -- | **0%** | 100% | passed through |
+| Prose document | 2,663 B | 2,663 B | **0%** | 100% | passed through |
 
 **Signal kept** is the part that matters. Reduction alone proves nothing — deleting
 the whole log scores 100%. So each scenario also asserts that the lines carrying the
