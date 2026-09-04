@@ -39,14 +39,53 @@ class ClaudeMemEngine:
             """)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_mem_topic ON memories(topic)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_mem_proj ON memories(project_dir)")
+            self._dedupe_and_constrain(conn)
+
+    def _dedupe_and_constrain(self, conn):
+        """
+        Collapse memories that repeat an identical fact, then keep them unique.
+
+        save_memory used a plain INSERT, so re-saving the same decision appended
+        another row every time. Recall then returned the same fact repeatedly and
+        spent the tokens this engine exists to save.
+        """
+        already = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_mem_unique'"
+        ).fetchone()
+        if already:
+            return
+
+        # NULL never equals NULL in a UNIQUE index, so normalise before constraining.
+        conn.execute("UPDATE memories SET project_dir = '' WHERE project_dir IS NULL")
+        conn.execute("UPDATE memories SET tags = '' WHERE tags IS NULL")
+
+        # Keep the most recent row of each identical fact.
+        conn.execute("""
+            DELETE FROM memories WHERE id NOT IN (
+                SELECT MAX(id) FROM memories GROUP BY topic, content, project_dir
+            )
+        """)
+        conn.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_mem_unique
+            ON memories(topic, content, project_dir)
+        """)
 
     def save_memory(self, topic: str, content: str, tags: str = "", project_dir: str = "", importance: int = 1):
-        """Saves or updates a permanent memory item."""
+        """
+        Saves a permanent memory item, refreshing it if the same fact is already held.
+
+        Re-saving a fact keeps one row and bumps its recency and importance, rather
+        than appending a duplicate.
+        """
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 INSERT INTO memories (topic, content, tags, project_dir, importance, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (topic, content, tags, project_dir, importance, time.time()))
+                ON CONFLICT(topic, content, project_dir) DO UPDATE SET
+                    updated_at = excluded.updated_at,
+                    tags = excluded.tags,
+                    importance = MAX(memories.importance, excluded.importance)
+            """, (topic, content, tags or "", project_dir or "", importance, time.time()))
 
     def recall_memories(self, query: str, project_dir: str = "", limit: int = 4) -> List[Dict[str, Any]]:
         """
