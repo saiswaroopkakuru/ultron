@@ -13,10 +13,19 @@ This repository contains Ultron, an intelligent context router, high-performance
 ## Ecosystem Dynamic Routing
 Ultron dynamically inspects context and orchestrates:
 - **Headroom / Pruner**: Heavy tool results, build/test logs, diffs, JSON payloads.
-- **Caveman**: Model output generation (direct, high density, zero filler, byte-exact entities).
+- **Anthropic Concise Mode / Caveman**: Model output generation (direct, high density, zero filler, byte-exact entities).
 - **Claude-Mem**: Past session history, architectural decisions, and bug history.
-- **Andrej Karpathy Guidelines**: Code modifications, refactors, and feature design.
-- **Installed Claude Skills**: Dispatches to `tdd-workflow`, `verification-loop`, `strategic-compact`, `security-guardrails`, and `graphify`.
+- **Andrej Karpathy Guidelines & CL4R1T4S Frontier Scaffolding**: Code modifications, refactors, and feature design.
+- **Installed Claude Skills**: Dispatches to `frontier-scaffold`, `tdd-workflow`, `verification-loop`, `strategic-compact`, `security-guardrails`, and `graphify`.
 
-## Hooks
+## Frontier Cognitive Scaffolding (CL4R1T4S)
+- **Phase 0 Intent Gate**: Distinguish `DIAGNOSTIC` (read-only evidence, no file edits or installs) from `IMPLEMENTATION`.
+- **Query Complexity Budget**: 1 tool call max for factual queries; multi-step planning for deep research; single-pass batched edits for surgical implementation.
+- **Zero Code Comments**: Do not pollute generated code with docstrings or inline explanations unless requested (saves 20–35% tokens).
+- **3-Strike Loop Breaker**: Never loop more than 3 times on the same error. Stop and isolate root cause.
+- **Devin Root-Cause Rule**: Never modify test assertions to force tests to pass; fix the underlying code.
+
+## Hooks & Execution
+- Native `PreToolUse` hook rewrites shell executions through cross-platform `ultron.runner` to prune stdout at runtime.
 - Native `PostToolUse` hook (`ultron/hooks/post_tool_use.py`) automatically intercepts heavy `Bash`, `Read`, and `Grep` outputs. Reduction is 50%–95% on repetitive logs, test runs, and diffs, while source code passes through byte-identical. Injects contextual skill hints on failures and diffs.
+

@@ -154,7 +154,61 @@ def ultron_strategic_compact_check(tool_invocations_count: int, threshold: int =
             f"If you have completed your current milestone (e.g. finished planning or passed tests),\n"
             f"run '/compact' to reset context cleanly at a natural boundary."
         )
-    return f"Context within normal operating window ({tool_invocations_count}/{threshold} tool calls)."
+@mcp.tool()
+def ultron_cl4r1t4s_scaffold(mode: str = "frontier_unified") -> str:
+    """
+    Returns production-grade agent scaffolding extracted from CL4R1T4S.
+    Supported modes:
+    - 'frontier_unified': Synthesis of Anthropic Concise Mode, Cursor 2.0, Devin 2.0 & Karpathy.
+    - 'concise_mode': Anthropic's official Concise Mode prompt (UserStyle_Modes.md).
+    - 'devin_mode': Devin 2.0 root-cause isolation & truthful engineering directives.
+    - 'cursor_mode': Cursor Composer 2.0 speculative reads, 3-strike loop guard, & single-pass edits.
+    """
+    if mode == "concise_mode":
+        return (
+            "[ANTHROPIC CONCISE MODE - FROM CL4R1T4S]\n"
+            "Claude is operating in Concise Mode. In this mode, Claude aims to reduce its output tokens while maintaining "
+            "its helpfulness, quality, completeness, and accuracy. Claude provides answers to questions without much "
+            "unneeded preamble or postamble. It focuses on addressing the specific query or task at hand, avoiding tangential "
+            "information unless helpful for understanding or completing the request. If it decides to create a list, Claude focuses "
+            "on key information instead of comprehensive enumeration. Claude maintains a helpful tone while avoiding excessive "
+            "pleasantries or redundant offers of assistance. For code, artifacts, written content, or other generated outputs, "
+            "Claude maintains the exact same level of quality, completeness, and functionality as when NOT in Concise Mode. "
+            "There should be no impact to these output types. Claude does not compromise on completeness, correctness, "
+            "appropriateness, or helpfulness for the sake of brevity."
+        )
+    elif mode == "devin_mode":
+        return (
+            "[DEVIN 2.0 AUTONOMOUS ENGINEERING DIRECTIVE - FROM CL4R1T4S]\n"
+            "1. ROOT-CAUSE ISOLATION: When struggling to pass tests, never modify the tests themselves unless explicitly requested. "
+            "Always first consider that the root cause is in the implementation under test.\n"
+            "2. TRUTHFUL & TRANSPARENT: Do not create fake sample data or mock tests when you cannot get real data. "
+            "Do not pretend broken code is working.\n"
+            "3. ZERO CODE COMMENTS: Do not add comments, docstrings, or inline explanations to code you write unless requested. "
+            "Keep code clean and concise.\n"
+            "4. MODES: Operate strictly in 'planning' mode (gather context, inspect LSP/codebase) before transitioning to 'edit' mode.\n"
+            "5. OUTPUT TRUNCATION: Long terminal outputs must be truncated and offloaded to local storage rather than dumped into context."
+        )
+    elif mode == "cursor_mode":
+        return (
+            "[CURSOR COMPOSER 2.0 DIRECTIVE - FROM CL4R1T4S]\n"
+            "1. 3-STRIKE LOOP BREAKER: Do not loop more than 3 times to fix linter or test errors on the same file. "
+            "Stop, step back, and isolate the root cause or ask user.\n"
+            "2. SPECULATIVE BATCH READS: Speculatively read multiple relevant files in parallel rather than serial round-trips.\n"
+            "3. SINGLE-PASS UNIFIED EDITS: Always combine all changes into a single edit invocation rather than fragmented updates.\n"
+            "4. SURGICAL MUTATION: Always prefer editing existing files. Never proactively create documentation or README files.\n"
+            "5. NON-INTERACTIVE TERMINAL: Pass non-interactive flags (--yes, -y) and pipe pagers to `| cat`."
+        )
+    else:
+        return (
+            "[ULTRON FRONTIER UNIFIED SCAFFOLD - CL4R1T4S SYNTHESIS]\n"
+            "1. INTENT GATE: Distinguish DIAGNOSTIC (read-only evidence) from IMPLEMENTATION (active code changes).\n"
+            "2. CONCISE MODE: Eliminate preamble/postamble. Keep code 100% complete, bug-free, and runnable.\n"
+            "3. ZERO CODE BLOAT: No unrequested docstrings or inline commentary in generated code.\n"
+            "4. 3-STRIKE RULE: Abort automated fix loops after 3 failures on the same error. Isolate root cause.\n"
+            "5. SURGICAL EDITS: Read before write, batch changes into single-pass edits, touch only requested lines.\n"
+            "6. VERIFIABLE GOAL: Build, lint, and run automated tests before and after changes. Never relax tests."
+        )
 
 # -----------------
 # RESOURCES & PROMPTS
@@ -164,6 +218,26 @@ def ultron_strategic_compact_check(tool_invocations_count: int, threshold: int =
 def get_metrics_resource() -> str:
     """Live token savings telemetry JSON."""
     return json.dumps(breadcrumb_store.get_telemetry(), indent=2)
+
+@mcp.prompt("frontier_unified")
+def prompt_frontier_unified() -> str:
+    """Master frontier agent scaffold synthesizing Anthropic Concise Mode, Cursor 2.0, Devin 2.0, and Karpathy."""
+    return ultron_cl4r1t4s_scaffold("frontier_unified")
+
+@mcp.prompt("cl4r1t4s_concise_mode")
+def prompt_cl4r1t4s_concise_mode() -> str:
+    """Anthropic's official Concise Mode system prompt extracted from CL4R1T4S."""
+    return ultron_cl4r1t4s_scaffold("concise_mode")
+
+@mcp.prompt("cl4r1t4s_devin_mode")
+def prompt_cl4r1t4s_devin_mode() -> str:
+    """Devin 2.0 autonomous engineering directive extracted from CL4R1T4S."""
+    return ultron_cl4r1t4s_scaffold("devin_mode")
+
+@mcp.prompt("cl4r1t4s_cursor_mode")
+def prompt_cl4r1t4s_cursor_mode() -> str:
+    """Cursor Composer 2.0 3-strike loop guard & batch edit directive extracted from CL4R1T4S."""
+    return ultron_cl4r1t4s_scaffold("cursor_mode")
 
 @mcp.prompt("karpathy_mode")
 def prompt_karpathy() -> str:
@@ -195,3 +269,4 @@ def run_mcp_server():
 
 if __name__ == "__main__":
     run_mcp_server()
+

@@ -135,4 +135,47 @@ def test_ultron_runner():
     assert proc.returncode == 0
     assert "hello from runner" in proc.stdout
 
+def test_cl4r1t4s_frontier_scaffolding():
+    from ultron.core.router import router
+    from ultron.mcp.server import ultron_cl4r1t4s_scaffold
+
+    # 1. Test Intent Gate
+    diag_intent = router.classify_intent("Explain how the auth middleware works and check types")
+    assert diag_intent == "DIAGNOSTIC"
+
+    impl_intent = router.classify_intent("Implement rate limiting in the payment service and create tests")
+    assert impl_intent == "IMPLEMENTATION"
+
+    # 2. Test Complexity Classification
+    single_shot = router.classify_complexity("What is the return type of foo()?", 35)
+    assert single_shot["category"] == "SINGLE_SHOT_FACTUAL"
+    assert single_shot["tool_budget"] == 1
+
+    research = router.classify_complexity("Investigate codebase architecture and map dependencies", 55)
+    assert research["category"] == "DEEP_RESEARCH"
+    assert research["tool_budget"] >= 5
+
+    edit = router.classify_complexity("Fix the bug in user service and refactor models", 45)
+    assert edit["category"] == "SURGICAL_EDIT"
+
+    # 3. Test MCP Prompts / Scaffold
+    unified = ultron_cl4r1t4s_scaffold("frontier_unified")
+    assert "INTENT GATE" in unified
+    assert "CONCISE MODE" in unified
+    assert "3-STRIKE RULE" in unified
+
+    concise = ultron_cl4r1t4s_scaffold("concise_mode")
+    assert "Concise Mode" in concise
+    assert "maintains the exact same level of quality" in concise
+
+    devin = ultron_cl4r1t4s_scaffold("devin_mode")
+
+    assert "ROOT-CAUSE ISOLATION" in devin
+    assert "ZERO CODE COMMENTS" in devin
+
+    cursor = ultron_cl4r1t4s_scaffold("cursor_mode")
+    assert "3-STRIKE LOOP BREAKER" in cursor
+    assert "SPECULATIVE BATCH READS" in cursor
+
+
 
