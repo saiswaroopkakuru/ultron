@@ -1,7 +1,21 @@
 import re
 import json
+from collections import Counter
 from typing import Tuple, Dict, Any
 from ultron.core.breadcrumb import breadcrumb_store
+
+# Source-code markers across common languages. Code must never be pruned: the
+# document path deduplicates repeated lines and drops indentation, so a reader
+# is shown code that differs from what is on disk.
+CODE_HINT_REGEX = re.compile(
+    r"^\s*(?:def |class |import |from \S+ import |@\w+|function |const |let |var |"
+    r"public |private |protected |#include|package |fn |impl |func |type \w+ struct)",
+    re.M,
+)
+DIGIT_RUN_REGEX = re.compile(r"\d+")
+# A real diff carries this marker at the start of a line. Matching it anywhere
+# also caught source files that merely quote it, sending code down the diff path.
+DIFF_HEADER_REGEX = re.compile(r"^diff --git ", re.M)
 
 ANSI_REGEX = re.compile(r"\x1B(?:\[[0-?]*[ -/]*[@-~]|\].*?\x07)")
 PROGRESS_REGEX = re.compile(r"(\r[^\n]*)+")
@@ -10,8 +24,11 @@ class PrunerEngine:
     """
     Ultron Context Pruner Engine.
     Prunes tool outputs, terminal logs, git diffs, test results, JSON payloads,
-    and large documents by up to 95% before LLM context ingestion,
-    stashing byte-exact originals into SQLite breadcrumbs for 100% lossless recovery.
+    and large documents before LLM context ingestion, stashing byte-exact
+    originals into SQLite breadcrumbs for lossless recovery.
+
+    Reduction tracks how repetitive the input is: 90%+ on build logs, less on
+    diffs, and none on source code, which is passed through byte-identical.
     """
     def __init__(self, max_log_lines: int = 35):
         self.max_log_lines = max_log_lines
@@ -217,13 +234,35 @@ class PrunerEngine:
             "savings_pct": savings_pct
         }
 
+    def looks_like_source_code(self, text: str) -> bool:
+        """True when text is source code, which must be passed through untouched."""
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        if len(lines) < 5:
+            return False
+        indented = sum(1 for ln in lines if ln.startswith((" ", "\t")))
+        return len(CODE_HINT_REGEX.findall(text)) >= 2 and indented / len(lines) > 0.25
+
+    def looks_like_repetitive_log(self, text: str) -> bool:
+        """
+        Structural log detection. The keyword list only catches tools it already
+        knows, so a log from anything else falls through to the document path and
+        saves nothing. Repetition of line SHAPE is what makes a log prunable,
+        whatever produced it.
+        """
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        if len(lines) < 40:
+            return False
+        shapes = Counter(DIGIT_RUN_REGEX.sub("#", ln)[:80] for ln in lines)
+        return shapes.most_common(1)[0][1] / len(lines) > 0.3 or len(shapes) / len(lines) < 0.5
+
     def prune_tool_output(self, text: str) -> Tuple[str, Dict[str, Any]]:
         """Universal router that inspects tool output content and routes to the best pruner."""
         if not text or len(text) < 120:
-            return text, {"savings_pct": 0.0, "raw_bytes": len(text), "compressed_bytes": len(text)}
+            size = len(text) if text else 0
+            return text, {"savings_pct": 0.0, "raw_bytes": size, "compressed_bytes": size}
 
         # Git diffs
-        if "diff --git" in text or (text.startswith("--- ") and "\n+++ " in text):
+        if DIFF_HEADER_REGEX.search(text) or (text.startswith("--- ") and "\n+++ " in text):
             res, meta = self.prune_git_diff(text)
         elif (text.strip().startswith("{") and text.strip().endswith("}")) or (text.strip().startswith("[") and text.strip().endswith("]")):
             try:
@@ -231,7 +270,12 @@ class PrunerEngine:
                 res, meta = self.prune_json(text.strip())
             except Exception:
                 res, meta = self.prune_document_text(text)
-        elif any(k in text.lower() for k in ["npm", "yarn", "pnpm", "webpack", "vite", "pytest", "cargo", "gradle", "traceback (", "error:"]):
+        elif self.looks_like_source_code(text):
+            # Exact bytes matter more than any saving here.
+            res, meta = text, {"savings_pct": 0.0, "raw_bytes": len(text),
+                               "compressed_bytes": len(text), "skipped": "source_code"}
+        elif (any(k in text.lower() for k in ["npm", "yarn", "pnpm", "webpack", "vite", "pytest", "cargo", "gradle", "traceback (", "error:"])
+                or self.looks_like_repetitive_log(text)):
             res, meta = self.prune_build_or_test_log(text)
         else:
             res, meta = self.prune_document_text(text)
