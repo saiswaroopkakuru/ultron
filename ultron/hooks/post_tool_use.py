@@ -59,8 +59,11 @@ def run_hook():
         if len(output_text) < 120:
             sys.exit(0)
 
-        # Don't re-compress if already contains an ultron breadcrumb
-        if "[ultron:ref:" in output_text:
+        # Don't re-compress output that IS an ultron payload. Testing for the tag
+        # anywhere in the text also skipped any output that merely mentions it --
+        # including this project's own source and diffs, worth ~90% on a git log.
+        head = output_text.lstrip()[:200]
+        if head.startswith("[ultron:ref:") or "[ULTRON:" in head:
             sys.exit(0)
 
         # Import Ultron core compression engines
@@ -119,11 +122,18 @@ def run_hook():
             raw_bytes = meta.get("raw_bytes", len(output_text))
             comp_bytes = meta.get("compressed_bytes", len(compressed_text))
             
-            notice = (
-                f"[Ultron Active: Slashing {round(savings, 1)}% tokens ({raw_bytes:,}B -> {comp_bytes:,}B). "
-                f"Full raw output safely stashed in SQLite as {crumb}. "
-                f"To expand full uncompressed output, run `/ultron expand <hash>`]"
-            )
+            if crumb:
+                notice = (
+                    f"[Ultron Active: Slashing {round(savings, 1)}% tokens ({raw_bytes:,}B -> {comp_bytes:,}B). "
+                    f"Full raw output safely stashed in SQLite as {crumb}. "
+                    f"To expand full uncompressed output, run `/ultron expand <hash>`]"
+                )
+            else:
+                # No breadcrumb means nothing was stored, so do not promise recovery.
+                notice = (
+                    f"[Ultron Active: Slashing {round(savings, 1)}% tokens ({raw_bytes:,}B -> {comp_bytes:,}B). "
+                    f"No breadcrumb stored for this output; the original is not recoverable.]"
+                )
 
             result_envelope = {
                 "hookSpecificOutput": {

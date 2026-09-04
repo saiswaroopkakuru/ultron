@@ -1,11 +1,28 @@
 import re
 import json
+from collections import Counter
 from typing import Tuple, Dict, Any
 from ultron.core.breadcrumb import breadcrumb_store
 from ultron.core.caveman import caveman
 
 ANSI_REGEX = re.compile(r"\x1B(?:\[[0-?]*[ -/]*[@-~]|\].*?\x07)")
 PROGRESS_REGEX = re.compile(r"(\r[^\n]*)+")
+
+# Source-code markers across common languages. Code must never be compressed:
+# the prose path deduplicates repeated lines and drops indentation, which silently
+# rewrites meaning in a file someone is about to edit.
+CODE_HINT_REGEX = re.compile(
+    r"^\s*(?:def |class |import |from \S+ import |@\w+|function |const |let |var |"
+    r"public |private |protected |#include|package |fn |impl |func |type \w+ struct)",
+    re.M,
+)
+DIGIT_RUN_REGEX = re.compile(r"\d+")
+# A unified diff hunk header is "@@ -a,b +c,d @@" -- the old test looked for the
+# literal "@@ +", which that format never contains, so the branch was unreachable
+# for anything not starting with "diff --git" (git show and git log -p both start
+# with "commit").
+DIFF_HUNK_REGEX = re.compile(r"^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@", re.M)
+
 
 class HeadroomCompressor:
     """
@@ -194,19 +211,28 @@ class HeadroomCompressor:
 
         compact_prose = "\n".join(deduped)
 
-        # 3. For large prose (> 700 chars), stash raw text into breadcrumbs
-        if raw_len > 700:
-            _, tag = breadcrumb_store.store(text, content_type="prose")
-            result = f"{tag} [ULTRON: Condensed {raw_len:,}B text -> {len(compact_prose):,}B]\n{compact_prose}"
-            comp_len = len(result)
-            savings = max(0.0, (raw_len - comp_len) / raw_len * 100)
-            return result, {
-                "type": "prose",
-                "raw_bytes": raw_len,
-                "compressed_bytes": comp_len,
-                "savings_pct": savings,
-                "breadcrumb": tag
-            }
+        # 3. Nothing was actually rewritten -- hand back the original and store nothing.
+        # Without this every trivial tool output left a row in the breadcrumb store.
+        if compact_prose == text:
+            return text, {"type": "prose", "raw_bytes": raw_len,
+                          "compressed_bytes": raw_len, "savings_pct": 0.0}
+
+        # 4. Stash the raw text before handing back a lossy rewrite. Filler removal
+        # and line dedup above cannot be undone, so skipping the stash for short text
+        # meant the original was gone for good while the hook still told the reader it
+        # had been "safely stashed". Always store; short outputs simply fail the
+        # caller's savings threshold and get passed through untouched instead.
+        _, tag = breadcrumb_store.store(text, content_type="prose")
+        result = f"{tag} [ULTRON: Condensed {raw_len:,}B text -> {len(compact_prose):,}B]\n{compact_prose}"
+        comp_len = len(result)
+        savings = max(0.0, (raw_len - comp_len) / raw_len * 100)
+        return result, {
+            "type": "prose",
+            "raw_bytes": raw_len,
+            "compressed_bytes": comp_len,
+            "savings_pct": savings,
+            "breadcrumb": tag
+        }
 
         comp_len = len(compact_prose)
         savings = max(0.0, (raw_len - comp_len) / raw_len * 100)
@@ -216,6 +242,27 @@ class HeadroomCompressor:
             "compressed_bytes": comp_len,
             "savings_pct": savings
         }
+
+    def looks_like_source_code(self, text: str) -> bool:
+        """True when text is source code, which must be passed through untouched."""
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        if len(lines) < 5:
+            return False
+        indented = sum(1 for ln in lines if ln.startswith((" ", "	")))
+        return len(CODE_HINT_REGEX.findall(text)) >= 2 and indented / len(lines) > 0.25
+
+    def looks_like_repetitive_log(self, text: str) -> bool:
+        """
+        Structural log detection. The keyword list only caught tools it already knew,
+        so a log from anything else fell through to the prose path and saved nothing.
+        Repetition of line SHAPE is what makes a log compressible, whatever produced it.
+        """
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        if len(lines) < 40:
+            return False
+        shapes = Counter(DIGIT_RUN_REGEX.sub("#", ln)[:80] for ln in lines)
+        most_common = shapes.most_common(1)[0][1]
+        return most_common / len(lines) > 0.3 or len(shapes) / len(lines) < 0.5
 
     def compress_tool_output(self, content: str) -> Tuple[str, Dict[str, Any]]:
         """
@@ -246,7 +293,9 @@ class HeadroomCompressor:
             return content, {"savings_pct": 0.0, "raw_bytes": len(content), "compressed_bytes": len(content)}
 
         # Git diff detector
-        if content.strip().startswith("diff --git") or ("@@ -" in content and "@@ +" in content):
+        if (content.lstrip().startswith("diff --git")
+                or "\ndiff --git " in content
+                or DIFF_HUNK_REGEX.search(content)):
             return self.compress_git_diff(content)
 
         # JSON detector
@@ -257,8 +306,14 @@ class HeadroomCompressor:
                 if meta.get("savings_pct", 0) > 15:
                     return res, meta
 
-        # Terminal / build log detector
-        if any(w in content.lower() for w in ["npm", "pytest", "cargo", "build", "test", "compiling", "yarn", "pip", "docker", "traceback", "error:"]):
+        # Source code: exact bytes matter more than any saving here.
+        if self.looks_like_source_code(content):
+            return content, {"savings_pct": 0.0, "raw_bytes": len(content),
+                             "compressed_bytes": len(content), "skipped": "source_code"}
+
+        # Terminal / build log detector: known tool vocabulary OR repetitive structure.
+        known_tool = any(w in content.lower() for w in ["npm", "pytest", "cargo", "build", "test", "compiling", "yarn", "pip", "docker", "traceback", "error:"])
+        if known_tool or self.looks_like_repetitive_log(content):
             return self.compress_build_or_test_log(content)
 
         # Web scrape / HTML detector
