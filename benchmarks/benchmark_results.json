@@ -5,25 +5,25 @@
     "ultron_tokens": 641,
     "input_reduction_pct": 72.1,
     "total_reduction_pct": 72.72,
-    "precision_pct": 100.0,
-    "speedup": 4.46
+    "precision_pct": 21.05,
+    "speedup": 5.56
   },
   {
     "scenario": "Large Git Diff Patch",
-    "raw_tokens": 1363,
-    "ultron_tokens": 514,
+    "raw_tokens": 1445,
+    "ultron_tokens": 609,
     "input_reduction_pct": 74.93,
-    "total_reduction_pct": 62.29,
-    "precision_pct": 70.0,
-    "speedup": 0.99
+    "total_reduction_pct": 57.85,
+    "precision_pct": 100.0,
+    "speedup": 1.09
   },
   {
     "scenario": "ClaudeMem Cross-Session Memory",
     "raw_tokens": 1625,
-    "ultron_tokens": 570,
-    "input_reduction_pct": 84.0,
-    "total_reduction_pct": 64.92,
+    "ultron_tokens": 585,
+    "input_reduction_pct": 81.74,
+    "total_reduction_pct": 64.0,
     "precision_pct": 100.0,
-    "speedup": 1.25
+    "speedup": 1.16
   }
 ]

@@ -100,3 +100,13 @@ def test_cache_guard_stabilization():
     stabilized = cache_guard.stabilize_payload(payload, "[ULTRON MEMORY]")
     assert "You are an expert software engineer." in stabilized["system"]
     assert "[ULTRON MEMORY]" in stabilized["system"]
+
+def test_karpathy_review_and_compact():
+    from ultron.mcp.server import ultron_karpathy_review, ultron_strategic_compact_check
+
+    review = ultron_karpathy_review("class FactoryBuilderAbstract: pass")
+    assert "Andrej Karpathy Guidelines Review" in review
+    assert "abstraction detected" in review
+
+    compact_msg = ultron_strategic_compact_check(tool_invocations_count=45, threshold=40)
+    assert "STRATEGIC COMPACTION RECOMMENDED" in compact_msg
