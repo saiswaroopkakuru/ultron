@@ -120,21 +120,24 @@ def run_hook():
             else:
                 updated_tool_resp = compressed_text
 
-            crumb = meta.get("breadcrumb", "")
-            raw_bytes = meta.get("raw_bytes", len(output_text))
-            comp_bytes = meta.get("compressed_bytes", len(compressed_text))
-            
+            from ultron.core.router import router
+            routing = router.route_context(output_text)
+            skill_hints = []
+            if routing.get("recommended_skills"):
+                skill_hints.append(f"Skills: {', '.join(routing['recommended_skills'])}")
+            if "karpathy_guidelines" in routing.get("active_plugins", []):
+                skill_hints.append("Karpathy Guidelines: Simplicity & Surgical Changes")
+            hint_str = f" [{'; '.join(skill_hints)}]" if skill_hints else ""
+
             if crumb:
                 notice = (
                     f"[Ultron Active: Slashing {round(savings, 1)}% tokens ({raw_bytes:,}B -> {comp_bytes:,}B). "
                     f"Full raw output safely stashed in SQLite as {crumb}. "
-                    f"To expand full uncompressed output, run `/ultron expand <hash>`]"
+                    f"To expand full uncompressed output, run `/ultron expand <hash>`]{hint_str}"
                 )
             else:
-                # No breadcrumb means nothing was stored, so do not promise recovery.
                 notice = (
-                    f"[Ultron Active: Slashing {round(savings, 1)}% tokens ({raw_bytes:,}B -> {comp_bytes:,}B). "
-                    f"No breadcrumb stored for this output; the original is not recoverable.]"
+                    f"[Ultron Active: Slashing {round(savings, 1)}% tokens ({raw_bytes:,}B -> {comp_bytes:,}B).]{hint_str}"
                 )
 
             result_envelope = {

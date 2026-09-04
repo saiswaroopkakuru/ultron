@@ -35,19 +35,27 @@ Ultron operates **directly at the in-process tool boundary** via Claude Code's n
    - **JSON**: Prunes repetitive array elements and deeply nested objects.
 3. **Reversible Breadcrumbs**: Full uncompressed tool outputs are stored in a local SQLite database (`~/.ultron/memory.db`) with content-addressed SHA-256 hashes (`[ultron:ref:hash:NL:NB]`).
 4. **100% Byte-Exact Recovery**: If Claude or the developer needs to inspect the full uncompressed log, `/ultron expand <hash>` or MCP tool `ultron_expand_breadcrumb` instantly restores the original text.
-5. **Andrej Karpathy Guidelines**: Built-in MCP review tool enforcing Karpathy's 4 principles (*Think Before Coding*, *Simplicity First*, *Surgical Changes*, *Goal-Driven Execution*).
+5. **Context-Aware Plugin Router & Skill Dispatcher**: Inspects incoming queries, codebase state, and tool outputs to dynamically orchestrate:
+   - **Headroom / Pruner**: Heavy tool outputs, logs, diffs, JSON payloads.
+   - **Caveman**: Model output generation (direct, high density, zero filler, byte-exact entities).
+   - **Claude-Mem**: Past session history, architectural decisions, and bug history.
+   - **Andrej Karpathy Guidelines**: Code modifications, refactors, and feature design.
+   - **Claude Skills**: Dynamically dispatches to `tdd-workflow`, `verification-loop`, `strategic-compact`, `security-guardrails`, and `graphify`.
 
 ---
 
-## 🤝 Ecosystem Harmony
+## 🤝 Ecosystem Harmony & Plugin Routing
 
-Ultron does one job and does it with surgical excellence. It is designed to compose cleanly alongside other specialized tools:
+Ultron acts as the intelligent conductor for your Claude Code environment, routing tasks to the right specialized engine based on context:
 
-| System | Role | Layer |
-| :--- | :--- | :--- |
-| **`claude-mem`** | Cross-session memory & vector retrieval | Session history |
-| **`caveman`** | High-density model output compression | Assistant output |
-| **`Ultron`** | In-process tool output pruner & breadcrumb store | Tool input context |
+| System | Role | Layer | Dynamic Trigger Condition |
+| :--- | :--- | :--- | :--- |
+| **`Ultron Pruner`** | Tool output pruner & breadcrumb store | Tool input context | Terminal build logs, test runs, diffs >120B |
+| **`caveman`** | High-density model output compression | Assistant output | Conversational explanations, planning, prose |
+| **`claude-mem`** | Cross-session memory & vector retrieval | Session history | Queries asking about past decisions, history, bugs |
+| **`Karpathy Guidelines`**| Code simplicity & surgical changes | Code engineering | Implementing features, creating classes, refactors |
+| **`Claude Skills`** | Specialized workflow skills | Dynamic execution | TDD on test failures, verification loop before PR |
+
 
 ---
 

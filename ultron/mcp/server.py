@@ -8,12 +8,55 @@ import json
 from mcp.server.fastmcp import FastMCP
 from ultron.core.breadcrumb import breadcrumb_store
 from ultron.core.pruner import pruner
+from ultron.core.router import router
 from ultron.config import config
 
 mcp = FastMCP(
     "Ultron Optimizer",
-    instructions="Reversible tool-output context pruner, SQLite breadcrumb store, and Karpathy coding guidelines."
+    instructions="Context-aware plugin router, reversible tool-output pruner, and Karpathy coding guidelines."
 )
+
+# -----------------
+# CONTEXT ROUTER & ECOSYSTEM TOOLS
+# -----------------
+
+@mcp.tool()
+def ultron_route_context(prompt_or_context: str) -> str:
+    """
+    Intelligently analyzes the current prompt or context and returns
+    which plugins (Headroom pruner, Caveman density, Claude-Mem, Karpathy guidelines)
+    and specialized Claude skills (TDD, verification-loop, etc.) to activate.
+    """
+    decision = router.route_context(prompt_or_context)
+    lines = [
+        f"=== ULTRON CONTEXT ROUTER DECISION ===",
+        f"Primary Plugin:     {decision['primary_plugin']}",
+        f"Active Plugins:     {', '.join(decision['active_plugins'])}",
+        f"Recommended Skills: {', '.join(decision['recommended_skills']) if decision['recommended_skills'] else 'none'}",
+        "\nDirectives:"
+    ]
+    for d in decision['directives']:
+        lines.append(f"  * {d}")
+    return "\n".join(lines)
+
+@mcp.tool()
+def ultron_get_active_plugins() -> str:
+    """
+    Returns the discovery status of all installed ecosystem plugins and skills
+    on this machine (Headroom, Caveman, Claude-Mem, Karpathy, and Claude skills).
+    """
+    status = router.get_plugin_status()
+    lines = ["=== ULTRON ECOSYSTEM PLUGINS & SKILLS ==="]
+    for key in ["headroom_pruner", "caveman", "claude_mem", "karpathy_guidelines"]:
+        info = status[key]
+        lines.append(f"- **{info['name']}** [{info['status']}]: {info['role']} (Layer: {info['layer']})")
+    
+    skills_info = status["claude_skills"]
+    lines.append(f"\nInstalled Claude Skills ({skills_info['count']}):")
+    for s in skills_info['available']:
+        lines.append(f"  * {s}")
+    return "\n".join(lines)
+
 
 # -----------------
 # CONTEXT PRUNING & RECOVERY TOOLS

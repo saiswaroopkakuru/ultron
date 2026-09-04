@@ -101,3 +101,27 @@ def test_karpathy_review_and_compact():
 
     compact_msg = ultron_strategic_compact_check(tool_invocations_count=45, threshold=40)
     assert "STRATEGIC COMPACTION RECOMMENDED" in compact_msg
+
+def test_context_router():
+    from ultron.core.router import router
+
+    # Test memory routing
+    res_mem = router.route_context("What did we configure for database connection pooling last time?")
+    assert "claude_mem" in res_mem["active_plugins"]
+
+    # Test code and TDD routing
+    res_code = router.route_context("Refactor the payment class and fix the failed unit test")
+    assert "karpathy_guidelines" in res_code["active_plugins"]
+    assert "tdd-workflow" in res_code["recommended_skills"]
+
+    # Test verification loop
+    res_pr = router.route_context("Ready to git commit and create PR")
+    assert "verification-loop" in res_pr["recommended_skills"]
+
+    # Test status
+    status = router.get_plugin_status()
+    assert "headroom_pruner" in status
+    assert "claude_mem" in status
+    assert "caveman" in status
+    assert "karpathy_guidelines" in status
+

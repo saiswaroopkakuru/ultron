@@ -97,12 +97,46 @@ def install():
     click.echo("  - Hook: PostToolUse installed in ~/.claude/settings.json")
     click.echo("  - MCP: Registered in ~/.claude.json")
 
+@click.command()
+@click.argument("text")
+def route(text):
+    """Analyze context and print optimal plugin and skill routing decisions."""
+    from ultron.core.router import router
+    decision = router.route_context(text)
+    click.echo(click.style("\n=== ULTRON CONTEXT ROUTER DECISION ===", fg="cyan", bold=True))
+    click.echo(f"  * Primary Plugin:     {decision['primary_plugin']}")
+    click.echo(f"  * Active Plugins:     {', '.join(decision['active_plugins'])}")
+    click.echo(f"  * Recommended Skills: {', '.join(decision['recommended_skills']) if decision['recommended_skills'] else 'none'}")
+    click.echo(click.style("\nDirectives:", fg="green", bold=True))
+    for d in decision['directives']:
+        click.echo(f"  - {d}")
+    click.echo()
+
+@click.command()
+def plugins():
+    """Discover and display all installed ecosystem plugins and skills."""
+    from ultron.core.router import router
+    status = router.get_plugin_status()
+    click.echo(click.style("\n=== ULTRON ECOSYSTEM PLUGINS ===", fg="cyan", bold=True))
+    for key in ["headroom_pruner", "caveman", "claude_mem", "karpathy_guidelines"]:
+        info = status[key]
+        badge = click.style(f"[{info['status']}]", fg="green" if "active" in info['status'] else "yellow")
+        click.echo(f"  * {info['name']:<28} {badge:<18} {info['role']}")
+    
+    skills_info = status["claude_skills"]
+    click.echo(click.style(f"\n=== INSTALLED CLAUDE SKILLS ({skills_info['count']}) ===", fg="magenta", bold=True))
+    for s in skills_info['available']:
+        click.echo(f"  - {s}")
+    click.echo()
+
 main.add_command(mcp)
 main.add_command(status)
 main.add_command(expand)
 main.add_command(compress)
 main.add_command(clean)
 main.add_command(install)
+main.add_command(route)
+main.add_command(plugins)
 
 if __name__ == "__main__":
     main()
