@@ -35,41 +35,33 @@ Ultron operates **directly at the in-process tool boundary** via Claude Code's n
    - **JSON**: Prunes repetitive array elements and deeply nested objects.
 3. **Reversible Breadcrumbs**: Full uncompressed tool outputs are stored in a local SQLite database (`~/.ultron/memory.db`) with content-addressed SHA-256 hashes (`[ultron:ref:hash:NL:NB]`).
 4. **100% Byte-Exact Recovery**: If Claude or the developer needs to inspect the full uncompressed log, `/ultron expand <hash>` or MCP tool `ultron_expand_breadcrumb` instantly restores the original text.
-5. **Context-Aware Plugin Router & Skill Dispatcher**: Classifies incoming query or tool-output text to dynamically recommend:
-   - **Headroom / Pruner**: Heavy tool outputs, logs, diffs, JSON payloads.
-   - **Caveman**: Model output generation (direct, high density, zero filler, byte-exact entities).
-   - **Claude-Mem**: Past session history, architectural decisions, and bug history.
-   - **Andrej Karpathy Guidelines**: Code modifications, refactors, and feature design.
-   - **Claude Skills**: Dynamically dispatches to installed skills (`frontier-scaffold`, `tdd-workflow`, `verification-loop`, `strategic-compact`, `security-guardrails`, `graphify`).
-
----
-
-## 🤝 Ecosystem Harmony & Plugin Routing
-
-Ultron acts as the intelligent conductor for your Claude Code environment, routing tasks to the right specialized engine based on context:
-
-| System | Role | Layer | Dynamic Trigger Condition |
-| :--- | :--- | :--- | :--- |
-| **`Ultron Pruner`** | Tool output pruner & breadcrumb store | Tool input context | Terminal build logs, test runs, diffs >120B |
-| **`caveman`** | High-density model output compression | Assistant output | Conversational explanations, planning, prose |
-| **`claude-mem`** | Cross-session memory & vector retrieval | Session history | Queries asking about past decisions, history, bugs |
-| **`Karpathy Guidelines`**| Code simplicity & surgical changes | Code engineering | Implementing features, creating classes, refactors |
-| **`Claude Skills`** | Specialized workflow skills | Dynamic execution | TDD on test failures, verification loop before PR |
-
+5. **Skill Hints (optional)**: Matches keywords in the intercepted output and appends one
+   short line naming a relevant skill — for example pointing at `tdd-workflow` after a test
+   failure. It reads `~/.claude/skills/`, so it only names skills already installed on your
+   machine, and stays silent when it finds none. This is a suggestion string appended to the
+   hook's `additionalContext`, not orchestration: Ultron suggests, Claude decides. Nothing
+   else in Ultron depends on it. See `ultron/core/router.py`, or run
+   `python -m ultron.cli plugins` to see what it detects for you.
 
 ---
 
 ## 🚀 Quick Start
 
+Requires Python 3.10+. Works on macOS, Linux, and Windows.
+
 ### 1. Installation
-```powershell
+```bash
 git clone https://github.com/saiswaroopkakuru/ultron.git
 cd ultron
+
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\Activate.ps1
+
 pip install -e .
 ```
 
 ### 2. Configure Claude Code
-```powershell
+```bash
 python -m ultron.cli install
 ```
 This automatically configures:
@@ -81,7 +73,7 @@ This automatically configures:
 
 ## 🛠️ CLI Usage
 
-```powershell
+```bash
 # Check live pruned token metrics & stored breadcrumbs
 python -m ultron.cli status
 
@@ -93,7 +85,13 @@ python -m ultron.cli compress build.log
 
 # Purge breadcrumbs older than 7 days
 python -m ultron.cli clean --days 7
+
+# Show which installed skills the hint matcher can see
+python -m ultron.cli plugins
 ```
+
+On systems where `python` is not on PATH, use `python3`. Inside the virtualenv from
+Quick Start, `ultron status` works as a shorthand for `python -m ultron.cli status`.
 
 ---
 
@@ -103,7 +101,7 @@ Separate from the in-process pruning hook, `ultron start` runs a local FastAPI s
 
 By default this reroutes requests to your local Ollama model (`gemma4:26b` or `qwen2.5:0.5b`), running Claude Code at **$0 Anthropic usage credits**:
 
-```powershell
+```bash
 # Start the gateway (binds 127.0.0.1:8787 by default)
 python -m ultron.cli start --model gemma4:26b
 
