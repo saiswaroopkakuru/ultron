@@ -41,8 +41,9 @@ def status():
         crumbs = conn.execute(
             "SELECT hash_key, content_type, char_len, line_count, created_at FROM breadcrumbs ORDER BY created_at DESC LIMIT 8"
         ).fetchall()
+        total_crumbs = conn.execute("SELECT COUNT(*) FROM breadcrumbs").fetchone()[0]
 
-    click.echo(click.style(f"\n=== RECENT BREADCRUMBS ({len(crumbs)} stored) ===", fg="green", bold=True))
+    click.echo(click.style(f"\n=== RECENT BREADCRUMBS (showing {len(crumbs)} of {total_crumbs} stored) ===", fg="green", bold=True))
     if crumbs:
         click.echo(f"{'HASH':<10} {'TYPE':<16} {'SIZE':<18} {'TIME'}")
         click.echo("-" * 55)

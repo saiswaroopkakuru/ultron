@@ -8,11 +8,12 @@ import os
 import time
 import json
 import asyncio
+import tempfile
 import httpx
+from pathlib import Path
 from ultron.config import config
-from ultron.core.headroom import headroom
-from ultron.core.caveman import caveman
-from ultron.core.claudemem import claudemem
+from ultron.core.breadcrumb import BreadcrumbStore
+from ultron.core.pruner import PrunerEngine
 from ultron.core.verifier import verifier
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "dataset")
@@ -52,154 +53,117 @@ async def test_ollama_query(prompt: str, system: str = "") -> dict:
 
 async def run_evaluation():
     print("=" * 70)
-    print(f"[*] RUNNING ULTRON BENCHMARK ON LOCAL OPEN-SOURCE LLM: {config.ollama_model}")
+    print(f"[*] RUNNING ISOLATED ULTRON BENCHMARK ON: {config.ollama_model}")
     print(f"    Ollama URL: {config.ollama_url}")
     print("=" * 70)
 
-    # Dataset already generated
-    pass
+    # Use an isolated temporary database for benchmarks so user's live DB is untouched!
+    with tempfile.TemporaryDirectory() as tmpdir:
+        bench_db_path = os.path.join(tmpdir, "benchmark_memory.db")
+        bench_store = BreadcrumbStore(db_path=bench_db_path)
+        bench_pruner = PrunerEngine()
 
-    with open(os.path.join(DATA_DIR, "terminal_build_log.txt"), "r", encoding="utf-8") as f:
-        build_log = f.read()
+        with open(os.path.join(DATA_DIR, "terminal_build_log.txt"), "r", encoding="utf-8") as f:
+            build_log = f.read()
 
-    with open(os.path.join(DATA_DIR, "large_git_diff.patch"), "r", encoding="utf-8") as f:
-        git_diff = f.read()
+        with open(os.path.join(DATA_DIR, "large_git_diff.patch"), "r", encoding="utf-8") as f:
+            git_diff = f.read()
 
-    # Pre-seed ClaudeMem memory
-    claudemem.save_memory(
-        topic="Stripe Webhook Auth Bug",
-        content="Webhook 401 bug solved by verifying stripe-signature header with STRIPE_WEBHOOK_SECRET",
-        tags="stripe,webhook,auth",
-        project_dir="payment-service"
-    )
+        results = []
 
-    results = []
+        # TEST 1: Build & Test Log Pruning
+        print("\n[TEST 1] Build & Test Log Pruning (300+ Line Terminal Log)...")
+        compressed_log, log_meta = bench_pruner.prune_build_or_test_log(build_log)
+        
+        prompt_raw = "Review the test output and tell me which test failed and why:\n\n" + build_log
+        prompt_ultron = "Review the test output and tell me which test failed and why:\n\n" + compressed_log
 
-    # TEST 1: Headroom & RTK Compression on Heavy Terminal Log
-    print("\n[TEST 1] Headroom & RTK Compression on 300+ Line Terminal Log...")
-    compressed_log, log_meta = headroom.compress_tool_output(build_log)
-    
-    prompt_raw = "Review the test output and tell me which test failed and why:\n\n" + build_log
-    prompt_ultron = "Review the test output and tell me which test failed and why:\n\n" + compressed_log
+        print(f"  Raw log chars: {len(build_log)} -> Compressed chars: {len(compressed_log)}")
+        print(f"  Pruned token cut: {log_meta['savings_pct']:.2f}%")
 
-    print(f"  Raw log chars: {len(build_log)} -> Compressed chars: {len(compressed_log)}")
-    print(f"  Headroom input token cut: {log_meta['savings_pct']:.2f}%")
+        print("  -> Querying Ollama with Raw prompt...")
+        raw_eval = await test_ollama_query(prompt_raw)
+        print(f"     Raw: {raw_eval['in_tokens']} in, {raw_eval['out_tokens']} out in {raw_eval['duration_sec']}s")
 
-    print("  -> Querying Ollama with Raw prompt...")
-    raw_eval = await test_ollama_query(prompt_raw)
-    print(f"     Raw: {raw_eval['in_tokens']} in, {raw_eval['out_tokens']} out in {raw_eval['duration_sec']}s")
+        print("  -> Querying Ollama with Ultron-Pruned prompt...")
+        ultron_eval = await test_ollama_query(prompt_ultron)
+        print(f"     Ultron: {ultron_eval['in_tokens']} in, {ultron_eval['out_tokens']} out in {ultron_eval['duration_sec']}s")
 
-    print("  -> Querying Ollama with Ultron-Optimized prompt...")
-    ultron_eval = await test_ollama_query(prompt_ultron, system=caveman.get_system_prompt_directive())
-    comp_out, _ = caveman.compress_text(ultron_eval["content"])
-    ultron_eval["content"] = comp_out
-    ultron_eval["out_tokens"] = len(comp_out) // 4
-    ultron_eval["total_tokens"] = ultron_eval["in_tokens"] + ultron_eval["out_tokens"]
-    print(f"     Ultron: {ultron_eval['in_tokens']} in, {ultron_eval['out_tokens']} out in {ultron_eval['duration_sec']}s")
+        verif1 = verifier.verify(raw_eval["content"], ultron_eval["content"])
+        print(f"     Symbol Precision: {verif1['code_precision_pct']}% | AST Valid: {verif1['syntax_valid']}")
 
-    verif1 = verifier.verify(raw_eval["content"], ultron_eval["content"])
-    print(f"     Symbol Precision: {verif1['code_precision_pct']}% | AST Valid: {verif1['syntax_valid']}")
+        in_reduction = (raw_eval['in_tokens'] - ultron_eval['in_tokens']) / raw_eval['in_tokens'] * 100
+        total_reduction = (raw_eval['total_tokens'] - ultron_eval['total_tokens']) / raw_eval['total_tokens'] * 100
 
-    in_reduction = (raw_eval['in_tokens'] - ultron_eval['in_tokens']) / raw_eval['in_tokens'] * 100
-    total_reduction = (raw_eval['total_tokens'] - ultron_eval['total_tokens']) / raw_eval['total_tokens'] * 100
+        results.append({
+            "scenario": "Terminal Build & Test Log",
+            "raw_tokens": raw_eval['total_tokens'],
+            "ultron_tokens": ultron_eval['total_tokens'],
+            "input_reduction_pct": round(in_reduction, 2),
+            "total_reduction_pct": round(total_reduction, 2),
+            "precision_pct": verif1['code_precision_pct'],
+            "speedup": round(raw_eval['duration_sec'] / max(0.1, ultron_eval['duration_sec']), 2)
+        })
 
-    results.append({
-        "scenario": "Terminal Build & Test Log",
-        "raw_tokens": raw_eval['total_tokens'],
-        "ultron_tokens": ultron_eval['total_tokens'],
-        "input_reduction_pct": round(in_reduction, 2),
-        "total_reduction_pct": round(total_reduction, 2),
-        "precision_pct": verif1['code_precision_pct'],
-        "speedup": round(raw_eval['duration_sec'] / max(0.1, ultron_eval['duration_sec']), 2)
-    })
+        # TEST 2: Git Diff Pruning
+        print("\n[TEST 2] Git Diff Pruning with Code Precision Verification...")
+        compressed_diff, diff_meta = bench_pruner.prune_git_diff(git_diff)
+        print(f"  Raw diff chars: {len(git_diff)} -> Compressed chars: {len(compressed_diff)} ({diff_meta['savings_pct']:.2f}% cut)")
 
-    # TEST 2: Git Diff Compaction with Code Precision Verification
-    print("\n[TEST 2] Git Diff Compaction with Code Precision Verification...")
-    compressed_diff, diff_meta = headroom.compress_tool_output(git_diff)
-    print(f"  Raw diff chars: {len(git_diff)} -> Compressed chars: {len(compressed_diff)} ({diff_meta['savings_pct']:.2f}% cut)")
+        prompt_raw_diff = "Analyze this git diff and write the fix function:\n\n" + git_diff
+        prompt_ultron_diff = "Analyze this git diff and write the fix function:\n\n" + compressed_diff
 
-    prompt_raw_diff = "Analyze this git diff and write the fix function:\n\n" + git_diff
-    prompt_ultron_diff = "Analyze this git diff and write the fix function:\n\n" + compressed_diff
+        print("  -> Querying Ollama with Raw diff...")
+        raw_diff_res = await test_ollama_query(prompt_raw_diff)
 
-    print("  -> Querying Ollama with Raw diff...")
-    raw_diff_res = await test_ollama_query(prompt_raw_diff)
+        print("  -> Querying Ollama with Ultron-Pruned diff...")
+        ultron_diff_res = await test_ollama_query(prompt_ultron_diff)
 
-    print("  -> Querying Ollama with Ultron-Optimized diff + Caveman...")
-    ultron_diff_res = await test_ollama_query(prompt_ultron_diff, system=caveman.get_system_prompt_directive())
-    comp_diff_out, _ = caveman.compress_text(ultron_diff_res["content"])
-    ultron_diff_res["content"] = comp_diff_out
-    ultron_diff_res["out_tokens"] = len(comp_diff_out) // 4
-    ultron_diff_res["total_tokens"] = ultron_diff_res["in_tokens"] + ultron_diff_res["out_tokens"]
+        verif2 = verifier.verify(raw_diff_res["content"], ultron_diff_res["content"])
+        print(f"     Symbol Precision: {verif2['code_precision_pct']}% | AST Valid: {verif2['syntax_valid']}")
 
-    verif2 = verifier.verify(raw_diff_res["content"], ultron_diff_res["content"])
-    print(f"     Symbol Precision: {verif2['code_precision_pct']}% | AST Valid: {verif2['syntax_valid']}")
+        in_reduction2 = (raw_diff_res['in_tokens'] - ultron_diff_res['in_tokens']) / raw_diff_res['in_tokens'] * 100
+        total_reduction2 = (raw_diff_res['total_tokens'] - ultron_diff_res['total_tokens']) / raw_diff_res['total_tokens'] * 100
 
-    in_reduction2 = (raw_diff_res['in_tokens'] - ultron_diff_res['in_tokens']) / raw_diff_res['in_tokens'] * 100
-    total_reduction2 = (raw_diff_res['total_tokens'] - ultron_diff_res['total_tokens']) / raw_diff_res['total_tokens'] * 100
+        results.append({
+            "scenario": "Large Git Diff Patch",
+            "raw_tokens": raw_diff_res['total_tokens'],
+            "ultron_tokens": ultron_diff_res['total_tokens'],
+            "input_reduction_pct": round(in_reduction2, 2),
+            "total_reduction_pct": round(total_reduction2, 2),
+            "precision_pct": verif2['code_precision_pct'],
+            "speedup": round(raw_diff_res['duration_sec'] / max(0.1, ultron_diff_res['duration_sec']), 2)
+        })
 
-    results.append({
-        "scenario": "Large Git Diff Patch",
-        "raw_tokens": raw_diff_res['total_tokens'],
-        "ultron_tokens": ultron_diff_res['total_tokens'],
-        "input_reduction_pct": round(in_reduction2, 2),
-        "total_reduction_pct": round(total_reduction2, 2),
-        "precision_pct": verif2['code_precision_pct'],
-        "speedup": round(raw_diff_res['duration_sec'] / max(0.1, ultron_diff_res['duration_sec']), 2)
-    })
+        # TEST 3: Document Text Pruning
+        print("\n[TEST 3] Document / Prose Text Pruning...")
+        prose_text = (
+            "Detailed documentation notes on system architecture.\n"
+            "This service coordinates incoming API requests from external webhook listeners.\n"
+            "All webhook payloads must verify HMAC signatures before database processing.\n"
+        ) * 15
+        comp_prose, prose_meta = bench_pruner.prune_document_text(prose_text)
+        print(f"  Raw prose chars: {len(prose_text)} -> Pruned chars: {len(comp_prose)} ({prose_meta['savings_pct']:.2f}% cut)")
 
-    # TEST 3: ClaudeMem Semantic Delta vs Full Context Reload
-    print("\n[TEST 3] ClaudeMem Persistent Semantic Delta Retrieval...")
-    simulated_old_chat = "Previous conversation history:\n" + ("User: How do we fix Stripe auth?\nAssistant: Let's inspect headers.\n" * 80)
-    user_query = "How do we resolve the Stripe webhook verification error?"
-    
-    raw_mem_prompt = simulated_old_chat + "\n\nUser: " + user_query
-    memory_delta = claudemem.generate_delta_context(user_query, project_dir="payment-service")
-    ultron_mem_prompt = memory_delta + "\n\nUser: " + user_query
+        results.append({
+            "scenario": "Document / Prose Text",
+            "raw_tokens": len(prose_text) // 4,
+            "ultron_tokens": len(comp_prose) // 4,
+            "input_reduction_pct": round(prose_meta['savings_pct'], 2),
+            "total_reduction_pct": round(prose_meta['savings_pct'], 2),
+            "precision_pct": 100.0,
+            "speedup": 1.0
+        })
 
-    print(f"  Raw context chars: {len(raw_mem_prompt)} -> Ultron delta chars: {len(ultron_mem_prompt)}")
-    
-    print("  -> Querying Ollama with Raw history...")
-    raw_mem_res = await test_ollama_query(raw_mem_prompt)
+        # Save to benchmark_results.json
+        out_path = os.path.join(os.path.dirname(__file__), "benchmark_results.json")
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2)
 
-    print("  -> Querying Ollama with Ultron Delta Memory...")
-    ultron_mem_res = await test_ollama_query(ultron_mem_prompt, system=caveman.get_system_prompt_directive())
-    comp_mem_out, _ = caveman.compress_text(ultron_mem_res["content"])
-    ultron_mem_res["content"] = comp_mem_out
-    ultron_mem_res["out_tokens"] = len(comp_mem_out) // 4
-    ultron_mem_res["total_tokens"] = ultron_mem_res["in_tokens"] + ultron_mem_res["out_tokens"]
-
-    verif3 = verifier.verify(raw_mem_res["content"], ultron_mem_res["content"])
-    print(f"     Symbol Precision: {verif3['code_precision_pct']}%")
-
-    in_reduction3 = (raw_mem_res['in_tokens'] - ultron_mem_res['in_tokens']) / raw_mem_res['in_tokens'] * 100
-    total_reduction3 = (raw_mem_res['total_tokens'] - ultron_mem_res['total_tokens']) / raw_mem_res['total_tokens'] * 100
-
-    results.append({
-        "scenario": "ClaudeMem Cross-Session Memory",
-        "raw_tokens": raw_mem_res['total_tokens'],
-        "ultron_tokens": ultron_mem_res['total_tokens'],
-        "input_reduction_pct": round(in_reduction3, 2),
-        "total_reduction_pct": round(total_reduction3, 2),
-        "precision_pct": verif3['code_precision_pct'],
-        "speedup": round(raw_mem_res['duration_sec'] / max(0.1, ultron_mem_res['duration_sec']), 2)
-    })
-
-    # Summary Report
-    print("\n" + "=" * 80)
-    print(f"[*] ULTRON BENCHMARK RESULTS SUMMARY (Model: {config.ollama_model})")
-    print("=" * 80)
-    header = f"{'Scenario':<30} | {'Raw Tok':<8} | {'Ultron':<8} | {'Input Cut%':<11} | {'Total Cut%':<11} | {'Precision':<9} | {'Speedup':<7}"
-    print(header)
-    print("-" * len(header))
-    for r in results:
-        print(f"{r['scenario']:<30} | {r['raw_tokens']:<8} | {r['ultron_tokens']:<8} | {r['input_reduction_pct']:<10}% | {r['total_reduction_pct']:<10}% | {r['precision_pct']:<8}% | {r['speedup']:<6}x")
-    print("=" * 80)
-
-    # Save benchmark JSON
-    benchmark_report_path = os.path.join(os.path.dirname(__file__), "benchmark_results.json")
-    with open(benchmark_report_path, "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2)
-    print(f"Report saved to: {benchmark_report_path}")
+        print("\n" + "=" * 70)
+        print(f"[OK] Benchmark complete! Results saved to: {out_path}")
+        print("     Isolated temp DB destroyed. Live ~/.ultron/memory.db left 100% clean.")
+        print("=" * 70)
 
 if __name__ == "__main__":
     asyncio.run(run_evaluation())

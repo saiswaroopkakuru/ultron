@@ -73,6 +73,9 @@ def run_hook():
 
         compressed_text, meta = pruner.prune_tool_output(output_text)
         savings = meta.get("savings_pct", 0.0)
+        crumb = meta.get("breadcrumb")
+        raw_bytes = meta.get("raw_bytes", len(output_text))
+        comp_bytes = meta.get("compressed_bytes", len(compressed_text))
 
         # If significant savings achieved (> 15%)
         # Accounting is recorded inside headroom.compress_tool_output above,
@@ -119,6 +122,10 @@ def run_hook():
                     updated_tool_resp = compressed_text
             else:
                 updated_tool_resp = compressed_text
+
+            crumb = meta.get("breadcrumb", "")
+            raw_bytes = meta.get("raw_bytes", len(output_text))
+            comp_bytes = meta.get("compressed_bytes", len(compressed_text))
 
             from ultron.core.router import router
             routing = router.route_context(output_text)

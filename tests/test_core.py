@@ -125,3 +125,14 @@ def test_context_router():
     assert "caveman" in status
     assert "karpathy_guidelines" in status
 
+def test_ultron_runner():
+    import subprocess
+    proc = subprocess.run(
+        ["python", "-m", "ultron.runner", "--", "python", "-c", "print('hello from runner')"],
+        capture_output=True,
+        text=True
+    )
+    assert proc.returncode == 0
+    assert "hello from runner" in proc.stdout
+
+
