@@ -12,18 +12,18 @@ PACKAGE_SKILLS_DIR = Path(__file__).parent.parent / "skills"
 
 ULTRON_SKILL_MD = """---
 name: ultron
-description: Reversible tool-output compression, persistent memory, and breadcrumb recovery engine. Triggers on /ultron, /ultron status, /ultron expand <hash>, /ultron recall <query>, /ultron preserve, /compress, or /preserve.
+description: Reversible tool-output context pruner, SQLite breadcrumb store, and Karpathy coding guidelines. Triggers on /ultron, /ultron status, /ultron expand <hash>, or /ultron compress.
 ---
 
-# /ultron - Ultron Token Optimizer & Context Compression Engine
+# /ultron - Ultron In-Process Context Pruner & Breadcrumb Store
 
-Ultron compresses repetitive tool output before it reaches the model and stores the original
-so nothing is lost. Reduction depends on the input: 90%+ on build logs and dependency
-listings, roughly 50% on diffs, and none on source code, which is passed through
-byte-identical. It combines:
-1. **Reversible Breadcrumbs**: Large terminal logs, webpack traces, and git diffs are compacted into lightweight tags like `[ultron:ref:hash:NL:NB]`. Full raw output is stored in SQLite at `~/.ultron/memory.db` and can be expanded on-demand with zero loss.
-2. **Persistent Cross-Session Memory**: Architectural decisions and bug fixes are stored in SQLite and queried via BM25 retrieval (~200 token injection vs 20k token history dumps).
-3. **Smart Multi-Model Gateway & Telemetry**: Offloads summarization and indexing tasks to local Ollama (zero API tokens) and tracks live token savings.
+Ultron automatically prunes heavy tool output (terminal logs, pytest/cargo runs, git diffs, JSON)
+before it enters the model context, storing the byte-exact original in a local SQLite breadcrumb store.
+Reduction ranges from 50% to 95% on repetitive logs and diffs, while source code passes untouched.
+
+1. **Reversible Breadcrumbs**: Large outputs are replaced by tags like `[ultron:ref:hash:NL:NB]`. Full raw output is preserved in `~/.ultron/memory.db` and can be expanded on demand with zero loss.
+2. **PostToolUse Hook**: Runs natively inside Claude Code's tool execution loop with zero network proxy latency.
+3. **Karpathy Coding Guidelines**: Built-in review tools for simplicity, surgical changes, and anti-bloat.
 
 ---
 
@@ -32,44 +32,24 @@ byte-identical. It combines:
 When the user types `/ultron` or any subcommand, execute the corresponding action immediately:
 
 ### 1. `/ultron` or `/ultron status`
-Display the current live token savings, breadcrumbs, and memories.
+Display live token savings and recent breadcrumbs:
 - **If Ultron MCP tools are available**: Call `ultron_get_status()`.
-- **Otherwise (or if running via CLI)**: Execute the shell command:
+- **Otherwise**: Execute:
   ```powershell
   python -m ultron.cli status
   ```
-Format the output cleanly for the user showing total tokens processed, tokens saved, percentage reduction, and the table of recent breadcrumbs.
 
 ### 2. `/ultron expand <hash>`
-Expand a stashed breadcrumb back to its original raw output.
-- **If Ultron MCP tools are available**: Call `ultron_expand_breadcrumb(hash_key="<hash>")`.
+Expand a stashed breadcrumb back to its original raw output:
+- **If Ultron MCP tools are available**: Call `ultron_expand_breadcrumb(ref_tag_or_hash="<hash>")`.
 - **Otherwise**: Execute:
   ```powershell
   python -m ultron.cli expand <hash>
   ```
-Print the exact raw uncompressed text so the user can inspect it.
 
-### 3. `/ultron recall <query>`
-Query cross-session memories by relevance.
-- **If Ultron MCP tools are available**: Call `ultron_recall_memory(query="<query>")`.
-- **Otherwise**: Execute:
-  ```powershell
-  python -m ultron.cli recall "<query>"
-  ```
-Present the retrieved decisions and context.
-
-### 4. `/ultron preserve <content>` or `/preserve`
-Checkpoint an important architecture decision, bug solution, or milestone to persistent memory.
-- **If Ultron MCP tools are available**: Call `ultron_save_memory(topic="architecture", content="<content>")`.
-- **Otherwise**: Execute:
-  ```powershell
-  python -m ultron.cli preserve "<content>" --topic "architecture"
-  ```
-Confirm to the user that the milestone is saved in `~/.ultron/memory.db`.
-
-### 5. `/ultron compress <target>` or `/compress`
-Compress a massive log file, diff, or text snippet.
-- **If Ultron MCP tools are available**: Call `ultron_compress_tool_output(tool_output="<text>")`.
+### 3. `/ultron compress <target>` or `/compress`
+Prune a massive log file, diff, or JSON payload:
+- **If Ultron MCP tools are available**: Call `ultron_compress_tool_output(content="<text>")`.
 - **Otherwise**: Execute:
   ```powershell
   python -m ultron.cli compress "<target>"
@@ -77,11 +57,10 @@ Compress a massive log file, diff, or text snippet.
 
 ---
 
-## Relationship to Other Memory Systems
-If other memory systems are present:
-- **Project Memory (`~/.claude/projects/.../memory/`)**: Handles static developer preferences and high-level file descriptions.
-- **`claude-mem` / `@modelcontextprotocol/server-memory`**: Handles entity/relation graphs.
-- **`ultron`**: The heavy-data optimizer. Ultron stores raw blobs (diffs, test outputs, compiler traces) out-of-band in SQLite and replaces them with breadcrumbs, cutting prompt token consumption sharply when that output is repetitive."""
+## Relationship to Other Tools
+- **`claude-mem`**: Dedicated cross-session memory with Chroma vector embeddings + FTS5 full-text indexing.
+- **`caveman`**: Model output compression (removes conversational filler from assistant responses).
+- **`ultron`**: In-process tool-output context pruner and SQLite breadcrumb store. It shrinks input tokens before context ingestion."""
 
 def install_claude_integration(proxy_port: int = 8787) -> Dict[str, Any]:
     """

@@ -68,10 +68,10 @@ def run_hook():
         if head.startswith("[ultron:ref:") or "[ULTRON:" in head:
             sys.exit(0)
 
-        # Import Ultron core compression engines
-        from ultron.core.headroom import headroom
+        # Import Ultron core pruner engine
+        from ultron.core.pruner import pruner
 
-        compressed_text, meta = headroom.compress_tool_output(output_text)
+        compressed_text, meta = pruner.prune_tool_output(output_text)
         savings = meta.get("savings_pct", 0.0)
 
         # If significant savings achieved (> 15%)

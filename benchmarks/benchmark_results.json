@@ -2,28 +2,28 @@
   {
     "scenario": "Terminal Build & Test Log",
     "raw_tokens": 2350,
-    "ultron_tokens": 641,
-    "input_reduction_pct": 72.1,
-    "total_reduction_pct": 72.72,
-    "precision_pct": 21.05,
-    "speedup": 5.56
+    "ultron_tokens": 716,
+    "input_reduction_pct": 68.49,
+    "total_reduction_pct": 69.53,
+    "precision_pct": 15.38,
+    "speedup": 18.7
   },
   {
     "scenario": "Large Git Diff Patch",
     "raw_tokens": 1445,
-    "ultron_tokens": 609,
-    "input_reduction_pct": 74.93,
-    "total_reduction_pct": 57.85,
+    "ultron_tokens": 600,
+    "input_reduction_pct": 68.47,
+    "total_reduction_pct": 58.48,
     "precision_pct": 100.0,
-    "speedup": 1.09
+    "speedup": 1.54
   },
   {
     "scenario": "ClaudeMem Cross-Session Memory",
-    "raw_tokens": 1625,
-    "ultron_tokens": 585,
-    "input_reduction_pct": 81.74,
-    "total_reduction_pct": 64.0,
+    "raw_tokens": 1587,
+    "ultron_tokens": 602,
+    "input_reduction_pct": 76.15,
+    "total_reduction_pct": 62.07,
     "precision_pct": 100.0,
-    "speedup": 1.16
+    "speedup": 1.37
   }
 ]

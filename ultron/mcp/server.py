@@ -7,33 +7,30 @@ except Exception:
 import json
 from mcp.server.fastmcp import FastMCP
 from ultron.core.breadcrumb import breadcrumb_store
-from ultron.core.claudemem import claudemem
-from ultron.core.headroom import headroom
-from ultron.core.caveman import caveman
-from ultron.core.omniroute import omniroute
+from ultron.core.pruner import pruner
 from ultron.config import config
 
 mcp = FastMCP(
     "Ultron Optimizer",
-    instructions="Reversible tool-output compression, breadcrumb recovery, persistent memory, and Karpathy coding guidelines."
+    instructions="Reversible tool-output context pruner, SQLite breadcrumb store, and Karpathy coding guidelines."
 )
 
 # -----------------
-# TOKEN OPTIMIZATION TOOLS
+# CONTEXT PRUNING & RECOVERY TOOLS
 # -----------------
 
 @mcp.tool()
 def ultron_compress_tool_output(content: str, content_type: str = "auto") -> str:
     """
-    Compresses heavy tool outputs (build logs, git diffs, test outputs, JSON)
-    by 90%+ when the output is repetitive, less otherwise. Stores the uncompressed raw output in the reversible Breadcrumb store
-    and returns the optimized summary with a breadcrumb hash tag [ultron:ref:...].
+    Prunes heavy tool outputs (build/test logs, git diffs, JSON payloads, large docs)
+    by up to 95%. Stores the uncompressed raw output in the reversible Breadcrumb store
+    and returns an optimized summary with a breadcrumb hash tag [ultron:ref:hash:NL:NB].
     """
-    compressed, meta = headroom.compress_tool_output(content)
+    compressed, meta = pruner.prune_tool_output(content)
     tag = meta.get("breadcrumb", "")
     savings = meta.get("savings_pct", 0.0)
     return (
-        f"--- ULTRON COMPRESSED ({savings:.1f}% reduction) ---\n"
+        f"--- ULTRON PRUNED ({savings:.1f}% reduction) ---\n"
         f"{compressed}\n"
         f"--- (Use ultron_expand_breadcrumb('{tag}') if full details are needed) ---"
     )
@@ -42,7 +39,7 @@ def ultron_compress_tool_output(content: str, content_type: str = "auto") -> str
 def ultron_expand_breadcrumb(ref_tag_or_hash: str) -> str:
     """
     Losslessly recovers and returns the full raw uncompressed content
-    stored behind an [ultron:ref:...] hash key.
+    stored behind an [ultron:ref:...] hash key from local SQLite storage.
     """
     clean = ref_tag_or_hash.replace("[", "").replace("]", "").replace("ultron:ref:", "").split(":")[0].strip()
     raw = breadcrumb_store.retrieve(clean)
@@ -51,66 +48,22 @@ def ultron_expand_breadcrumb(ref_tag_or_hash: str) -> str:
     return raw
 
 @mcp.tool()
-def ultron_recall_memory(query: str, project_dir: str = "", limit: int = 5) -> str:
-    """
-    Searches persistent cross-session memory for architectural decisions,
-    past debugging fixes, and project context using local zero-cost token matching.
-    """
-    memories = claudemem.recall_memories(query, project_dir=project_dir, limit=limit)
-    if not memories:
-        return "No matching memories found in Ultron memory store."
-    
-    formatted = ["Found memories in Ultron persistent store:"]
-    for m in memories:
-        formatted.append(f"- **{m['topic']}**: {m['content']} (Tags: {m.get('tags', '')})")
-    return "\n".join(formatted)
-
-@mcp.tool()
-def ultron_save_memory(topic: str, content: str, tags: str = "", project_dir: str = "", importance: int = 1) -> str:
-    """
-    Permanently records an architectural decision, coding convention, or bug fix
-    into cross-session persistent memory so future agent turns never repeat mistakes.
-    """
-    claudemem.save_memory(topic=topic, content=content, tags=tags, project_dir=project_dir, importance=importance)
-    return f"Successfully recorded persistent memory for topic: '{topic}'."
-
-@mcp.tool()
-def ultron_checkpoint_session(summary: str, session_id: str = "", project_dir: str = "", active_branch: str = "") -> str:
-    """
-    Checkpoints current session state (CPR: Compress, Preserve, Resume),
-    saving key milestone context for instant resumption in future sessions.
-    """
-    sid = session_id or "session_" + str(int(claudemem.db_path.stat().st_mtime))
-    claudemem.checkpoint_session(sid, summary, project_dir=project_dir, active_branch=active_branch)
-    return f"Checkpoint saved for session {sid}."
-
-@mcp.tool()
-def ultron_caveman_compress(text: str, mode: str = "adaptive") -> str:
-    """
-    Applies Caveman linguistic compression to prose while guaranteeing that
-    all code blocks, inline code, filepaths, line numbers, and symbols remain 100% byte-exact.
-    """
-    c = caveman if mode == config.caveman_mode else type(caveman)(mode=mode)
-    compressed, meta = c.compress_text(text)
-    return compressed
-
-@mcp.tool()
 def ultron_get_status() -> str:
     """
-    Returns live telemetry metrics on tokens ingested, tokens saved,
-    percentage reduced, active model routing, and system health.
+    Returns live telemetry metrics on tokens ingested, tokens pruned,
+    percentage reduced, tool calls intercepted, and system storage.
     """
-    telemetry = omniroute.get_telemetry()
+    telemetry = breadcrumb_store.get_telemetry()
     return (
-        f"Ultron Token Optimization Engine Status:\n"
-        f"- Status: Active\n"
+        f"Ultron In-Process Context Pruner Status:\n"
+        f"- Status: Active (PostToolUse Hook enabled)\n"
         f"- Total Tokens Ingested: {telemetry['total_tokens_in']:,}\n"
-        f"- Tokens Saved (net): {telemetry['tokens_saved']:,} ({telemetry['savings_percentage']}%)\n"
-        f"- Tokens Saved (gross): {telemetry['tokens_saved_gross']:,}\n"
-        f"- Tokens Returned by expansions: {telemetry['tokens_expanded']:,}\n"
-        f"- Active Local Open-Source Model: {telemetry['active_ollama_model']}\n"
-        f"- Requests Routed: {json.dumps(telemetry['requests_routed'])}\n"
-        f"- Storage Path: {config.db_path}"
+        f"- Tokens Saved: {telemetry['tokens_saved']:,} ({telemetry['savings_percentage']}%)\n"
+        f"- Total Raw Bytes Ingested: {telemetry['total_raw_bytes']:,} bytes\n"
+        f"- Total Bytes Pruned: {telemetry['total_pruned_bytes']:,} bytes\n"
+        f"- Tool Calls Intercepted: {telemetry['tool_calls_intercepted']:,}\n"
+        f"- Breadcrumb Expansions: {telemetry['expansions_count']:,}\n"
+        f"- Database Path: {breadcrumb_store.db_path}"
     )
 
 # -----------------
@@ -133,7 +86,6 @@ def ultron_karpathy_review(diff_or_code: str) -> str:
         "3. **Zero Speculation**: Are there unrequested 'future-proof' parameters or features? If yes, remove them.",
         "4. **Verifiable Goal**: Does the change have an automated test proving it works before and after?",
     ]
-    # Check for over-engineering patterns
     warnings = []
     if "abstract class" in diff_or_code.lower() or "factory" in diff_or_code.lower():
         warnings.append("- Warning: Potential unnecessary abstraction detected. Can a simple function solve this?")
@@ -157,7 +109,7 @@ def ultron_strategic_compact_check(tool_invocations_count: int, threshold: int =
         return (
             f"[STRATEGIC COMPACTION RECOMMENDED]: You have reached {tool_invocations_count} tool calls.\n"
             f"If you have completed your current milestone (e.g. finished planning or passed tests),\n"
-            f"save a checkpoint with ultron_checkpoint_session() and run '/compact' to reset context."
+            f"run '/compact' to reset context cleanly at a natural boundary."
         )
     return f"Context within normal operating window ({tool_invocations_count}/{threshold} tool calls)."
 
@@ -168,15 +120,7 @@ def ultron_strategic_compact_check(tool_invocations_count: int, threshold: int =
 @mcp.resource("ultron://metrics")
 def get_metrics_resource() -> str:
     """Live token savings telemetry JSON."""
-    return json.dumps(omniroute.get_telemetry(), indent=2)
-
-@mcp.resource("ultron://context/delta")
-def get_context_delta() -> str:
-    """Recent active project memory context."""
-    latest = claudemem.get_latest_session()
-    if latest:
-        return f"Active Session: {latest['session_id']}\nSummary: {latest['summary']}"
-    return "No active session checkpoint."
+    return json.dumps(breadcrumb_store.get_telemetry(), indent=2)
 
 @mcp.prompt("karpathy_mode")
 def prompt_karpathy() -> str:
