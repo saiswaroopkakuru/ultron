@@ -3,12 +3,27 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ultron"
+name = "ultron-claude"
 version = "1.0.0"
-description = "Context-Aware Plugin Router, In-Process Context Pruner & SQLite Breadcrumb Store for Claude Code"
-authors = [{ name = "Sai Reddy" }]
+description = "In-process tool-output pruner and reversible SQLite breadcrumb store for Claude Code"
+authors = [{ name = "Sai Swaroop Kakuru" }]
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
+keywords = ["claude", "claude-code", "context", "tokens", "hook", "mcp", "llm"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Utilities",
+]
 dependencies = [
     "fastapi>=0.110.0",
     "uvicorn>=0.28.0",
@@ -20,5 +35,20 @@ dependencies = [
     "python-dotenv>=1.0.0"
 ]
 
+[project.urls]
+Homepage = "https://github.com/saiswaroopkakuru/ultron"
+Repository = "https://github.com/saiswaroopkakuru/ultron"
+Issues = "https://github.com/saiswaroopkakuru/ultron/issues"
+
 [project.scripts]
 ultron = "ultron.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["ultron*"]
+exclude = ["tests*", "benchmarks*"]
+
+# The bundled SKILL.md files live in plain directories, not packages, so package
+# discovery misses them. `ultron install` copies them into ~/.claude/skills, and
+# without this a pip-installed copy has nothing to copy.
+[tool.setuptools.package-data]
+ultron = ["skills/*/SKILL.md"]

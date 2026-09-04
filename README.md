@@ -51,6 +51,13 @@ Requires Python 3.10+. Works on macOS, Linux, and Windows.
 
 ### 1. Installation
 ```bash
+pip install ultron-claude
+```
+
+The distribution is `ultron-claude` (the name `ultron` was taken on PyPI); the import
+name and the CLI are both `ultron`. To work on the code instead, install from source:
+
+```bash
 git clone https://github.com/saiswaroopkakuru/ultron.git
 cd ultron
 
