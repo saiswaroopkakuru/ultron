@@ -34,6 +34,10 @@ class OmniRouteGateway:
                     updated_at REAL NOT NULL
                 )
             """)
+            # Older databases predate expansion accounting.
+            cols = {r[1] for r in conn.execute("PRAGMA table_info(telemetry)")}
+            if "tokens_expanded" not in cols:
+                conn.execute("ALTER TABLE telemetry ADD COLUMN tokens_expanded INTEGER DEFAULT 0")
 
     def _load_telemetry(self):
         with sqlite3.connect(self.db_path) as conn:
@@ -43,6 +47,7 @@ class OmniRouteGateway:
             if row:
                 self.total_tokens_in = row["total_tokens_in"]
                 self.tokens_saved = row["tokens_saved"]
+                self.tokens_expanded = row["tokens_expanded"] or 0
                 self.requests_routed = {
                     "anthropic": row["requests_anthropic"],
                     "ollama": row["requests_ollama"],
@@ -51,15 +56,28 @@ class OmniRouteGateway:
             else:
                 self.total_tokens_in = 0
                 self.tokens_saved = 0
+                self.tokens_expanded = 0
                 self.requests_routed = {"anthropic": 0, "ollama": 0, "fallback": 0}
 
+    def net_savings(self):
+        """
+        (net tokens saved, net percentage).
+
+        Expanding a breadcrumb pulls the raw text back into context, which hands
+        back tokens the compression saved. Counting only the compression side
+        reported a saving the caller never kept.
+        """
+        net = self.tokens_saved - self.tokens_expanded
+        pct = (net / self.total_tokens_in * 100) if self.total_tokens_in > 0 else 0.0
+        return net, pct
+
     def _save_telemetry(self):
-        pct = (self.tokens_saved / self.total_tokens_in * 100) if self.total_tokens_in > 0 else 0.0
+        _, pct = self.net_savings()
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 INSERT OR REPLACE INTO telemetry
-                (id, total_tokens_in, tokens_saved, savings_percentage, requests_anthropic, requests_ollama, requests_fallback, active_model, updated_at)
-                VALUES ('live', ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, total_tokens_in, tokens_saved, savings_percentage, requests_anthropic, requests_ollama, requests_fallback, active_model, updated_at, tokens_expanded)
+                VALUES ('live', ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 self.total_tokens_in,
                 self.tokens_saved,
@@ -68,7 +86,8 @@ class OmniRouteGateway:
                 self.requests_routed["ollama"],
                 self.requests_routed["fallback"],
                 config.ollama_model,
-                time.time()
+                time.time(),
+                self.tokens_expanded
             ))
 
     async def route_to_ollama(self, messages: list, system_prompt: str = "", stream: bool = False) -> Dict[str, Any]:
@@ -124,15 +143,22 @@ class OmniRouteGateway:
         self.total_tokens_in += raw_tokens
         self._save_telemetry()
 
+    def record_expansion(self, raw_tokens: int):
+        """Charges back the tokens an expansion returns to context."""
+        self.tokens_expanded += max(0, raw_tokens)
+        self._save_telemetry()
+
     def get_telemetry(self) -> Dict[str, Any]:
         # Re-read from disk first. Long-lived processes (the MCP server) load counters
         # once at __init__, so without this they report startup values forever while
         # short-lived hook processes keep writing new totals underneath them.
         self._load_telemetry()
-        pct = (self.tokens_saved / self.total_tokens_in * 100) if self.total_tokens_in > 0 else 0.0
+        net, pct = self.net_savings()
         return {
             "total_tokens_in": self.total_tokens_in,
-            "tokens_saved": self.tokens_saved,
+            "tokens_saved": net,
+            "tokens_saved_gross": self.tokens_saved,
+            "tokens_expanded": self.tokens_expanded,
             "savings_percentage": round(pct, 2),
             "requests_routed": self.requests_routed,
             "active_ollama_model": config.ollama_model

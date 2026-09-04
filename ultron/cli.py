@@ -98,8 +98,12 @@ def status():
         row = cur.fetchone()
         if row:
             click.echo(f"  * Total Tokens In:        {row['total_tokens_in']:,}")
-            click.echo(f"  * Tokens Saved (Out):     {row['tokens_saved']:,}")
-            click.echo(f"  * Token Reduction Ratio:  {row['savings_percentage']}%")
+            expanded = row['tokens_expanded'] if 'tokens_expanded' in row.keys() else 0
+            gross = row['tokens_saved']
+            click.echo(f"  * Tokens Saved (Gross):   {gross:,}")
+            click.echo(f"  * Tokens Returned:        {(expanded or 0):,}  (expansions)")
+            click.echo(f"  * Tokens Saved (Net):     {gross - (expanded or 0):,}")
+            click.echo(f"  * Token Reduction Ratio:  {row['savings_percentage']}%  (net)")
             click.echo(f"  * Requests Routed:        Anthropic: {row['requests_anthropic']} | Ollama: {row['requests_ollama']} | Fallback: {row['requests_fallback']}")
             click.echo(f"  * Active Local Engine:    {row['active_model']}")
         else:

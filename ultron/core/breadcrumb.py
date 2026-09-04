@@ -59,7 +59,19 @@ class BreadcrumbStore:
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.execute("SELECT raw_content FROM breadcrumbs WHERE hash_key = ?", (clean_key,))
             row = cur.fetchone()
-            return row[0] if row else None
+
+        if not row:
+            return None
+
+        # Every expansion path (CLI, MCP, proxy, inline text) reaches this method,
+        # so the charge-back is recorded once, here.
+        try:
+            from ultron.core.omniroute import omniroute
+            omniroute.record_expansion(max(1, len(row[0]) // 4))
+        except Exception:
+            pass
+
+        return row[0]
 
     def expand_breadcrumbs_in_text(self, text: str) -> str:
         """
