@@ -77,6 +77,46 @@ def test_pruner_git_diff_compression():
     assert "new_value = 2" in compressed
     assert "unchanged lines" in compressed
 
+def _unified_diff_body():
+    lines = ["--- installed", "+++ repo", "@@ -2,14 +2,15 @@"]
+    lines.extend([f" context_line_{i} = {i}" for i in range(30)])
+    lines.append("-description: old wording that must survive pruning")
+    lines.append("+description: new wording that must survive pruning")
+    lines.extend([f" tail_line_{i} = {i}" for i in range(30)])
+    return "\n".join(lines)
+
+
+def test_router_detects_unified_diff_after_leading_output():
+    """`diff -u` and difflib output rarely starts at byte 0. It is still a diff."""
+    text = "DIFFERENT\n" + _unified_diff_body()
+
+    compressed, meta = pruner.prune_tool_output(text)
+
+    assert meta["type"] == "git_diff", f"routed to {meta.get('type')}, body would be dropped"
+    assert "-description: old wording that must survive pruning" in compressed
+    assert "+description: new wording that must survive pruning" in compressed
+
+
+def test_router_detects_diff_without_file_headers():
+    """A patch piped through grep or head keeps its hunks but loses --- / +++."""
+    text = "\n".join(_unified_diff_body().splitlines()[2:])
+
+    compressed, meta = pruner.prune_tool_output(text)
+
+    assert meta["type"] == "git_diff"
+    assert "+description: new wording that must survive pruning" in compressed
+
+
+def test_router_still_treats_plain_log_as_log():
+    """The wider diff detection must not swallow ordinary build logs."""
+    log = "\n".join([f"[webpack] building module {i}... [ok]" for i in range(80)])
+    log += "\nERROR: src/api/user.ts(42,10): Property 'id' does not exist on type 'User'."
+
+    _, meta = pruner.prune_tool_output(log)
+
+    assert meta["type"] == "build_log"
+
+
 def test_pruner_json_compression():
     payload = {
         "status": "success",

@@ -16,6 +16,13 @@ DIGIT_RUN_REGEX = re.compile(r"\d+")
 # A real diff carries this marker at the start of a line. Matching it anywhere
 # also caught source files that merely quote it, sending code down the diff path.
 DIFF_HEADER_REGEX = re.compile(r"^diff --git ", re.M)
+# A unified diff that is not the first thing in the output: `diff -u`, difflib,
+# or a patch printed after a status line. Anchoring this to the start of the text
+# sent those down the log path, which keeps a few lines and drops the body.
+UNIFIED_DIFF_REGEX = re.compile(r"^--- .*\n\+\+\+ ", re.M)
+# Hunk headers are the last resort: a diff whose file headers were filtered off
+# (piped through grep or head) still must not be treated as a log.
+HUNK_HEADER_REGEX = re.compile(r"^@@ .*@@", re.M)
 
 ANSI_REGEX = re.compile(r"\x1B(?:\[[0-?]*[ -/]*[@-~]|\].*?\x07)")
 PROGRESS_REGEX = re.compile(r"(\r[^\n]*)+")
@@ -259,6 +266,18 @@ class PrunerEngine:
         shapes = Counter(DIGIT_RUN_REGEX.sub("#", ln)[:80] for ln in lines)
         return shapes.most_common(1)[0][1] / len(lines) > 0.3 or len(shapes) / len(lines) < 0.5
 
+    def looks_like_diff(self, text: str) -> bool:
+        """
+        True for any unified diff, wherever it starts in the output. The log
+        pruner keeps only a handful of lines, so a diff that reaches it comes
+        back to the model with its body missing.
+        """
+        if DIFF_HEADER_REGEX.search(text) or UNIFIED_DIFF_REGEX.search(text):
+            return True
+        return bool(HUNK_HEADER_REGEX.search(text)) and any(
+            line.startswith("+") or line.startswith("-") for line in text.splitlines()
+        )
+
     def prune_tool_output(self, text: str) -> Tuple[str, Dict[str, Any]]:
         """Universal router that inspects tool output content and routes to the best pruner."""
         if not text or len(text) < 120:
@@ -266,7 +285,7 @@ class PrunerEngine:
             return text, {"savings_pct": 0.0, "raw_bytes": size, "compressed_bytes": size}
 
         # Git diffs
-        if DIFF_HEADER_REGEX.search(text) or (text.startswith("--- ") and "\n+++ " in text):
+        if self.looks_like_diff(text):
             res, meta = self.prune_git_diff(text)
         elif (text.strip().startswith("{") and text.strip().endswith("}")) or (text.strip().startswith("[") and text.strip().endswith("]")):
             try:
