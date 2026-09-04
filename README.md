@@ -108,12 +108,53 @@ When registered with Claude Code or Cursor, Ultron provides:
 
 ---
 
+## 📊 Measured Results
+
+`benchmarks/run_benchmark.py` runs the pruner over four checked-in fixtures. It is
+deterministic — no model, no network — so anyone gets these numbers on this commit:
+
+```bash
+python benchmarks/run_benchmark.py
+```
+
+| Scenario | Raw | Kept | Reduction | Signal kept | Roundtrip |
+| :--- | ---: | ---: | ---: | ---: | :--- |
+| Build & test log | 21,314 B | 1,561 B | **92.7%** | 100% | byte-exact |
+| Git diff | 4,053 B | 443 B | **89.1%** | 100% | byte-exact |
+| JSON API response | 29,613 B | 261 B | **99.1%** | 100% | byte-exact |
+| Source code (`ultron/core/pruner.py`) | — | — | **0%** | 100% | passed through |
+
+**Signal kept** is the part that matters. Reduction alone proves nothing — deleting
+the whole log scores 100%. So each scenario also asserts that the lines carrying the
+answer survived: the assertion error, stderr cause and pytest summary for the log;
+every `+`/`-` line for the diff; the envelope fields and truncation marker for JSON.
+**Roundtrip** re-reads the stashed original out of SQLite and compares it byte-for-byte.
+
+The source-code row reads the pruner's own file, so its size moves with the code; the
+assertion that matters there is that input and output are byte-identical.
+
+Reduction tracks how repetitive the input is, so treat these as fixture numbers, not a
+promise: a diff that is mostly changed lines, or a log with no repeated section, saves
+far less. Source code is never pruned by design.
+
+`benchmarks/run_ollama_eval.py` is a separate optional check that asks a local Ollama
+model the same question from raw and pruned input. It needs a running Ollama server and
+its numbers move with model sampling, so it is not the headline benchmark.
+
+---
+
 ## 🧪 Testing
 
-Run the test suite:
-```powershell
-python -m pytest tests/test_core.py -v
+```bash
+python -m pytest tests -v
 ```
+
+- `tests/test_core.py` — pruner routes, breadcrumb store, telemetry, router, verifier.
+- `tests/test_hook_envelope.py` — drives the real `PostToolUse` hook as a subprocess
+  over stdin and asserts the replacement still matches Claude Code's tool output
+  schemas (`{stdout, stderr, interrupted}` for Bash, `{type, file:{...}}` for Read).
+  Claude Code ships often; when that shape drifts the hook stops pruning silently, and
+  this file is what turns that into a failing test instead of a quiet regression.
 
 ---
 

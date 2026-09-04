@@ -19,7 +19,8 @@ description: Reversible tool-output context pruner, SQLite breadcrumb store, and
 
 Ultron automatically prunes heavy tool output (terminal logs, pytest/cargo runs, git diffs, JSON)
 before it enters the model context, storing the byte-exact original in a local SQLite breadcrumb store.
-Measured reduction: 90%+ on build/dependency logs, ~50% on git diffs, 0% on source code (passed through untouched).
+Reduction tracks how repetitive the input is. On the repo's benchmark fixtures: 93% on
+build logs, 89% on git diffs, 99% on JSON, and 0% on source code, which passes untouched.
 
 1. **Reversible Breadcrumbs**: Large outputs are replaced by tags like `[ultron:ref:hash:NL:NB]`. Full raw output is preserved in `~/.ultron/memory.db` and can be expanded on demand with zero loss.
 2. **PostToolUse Hook**: Runs natively inside Claude Code's tool execution loop with zero network proxy latency.

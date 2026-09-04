@@ -66,7 +66,7 @@ def ultron_get_active_plugins() -> str:
 def ultron_compress_tool_output(content: str, content_type: str = "auto") -> str:
     """
     Prunes heavy tool outputs (build/test logs, git diffs, JSON payloads, large docs)
-    (measured: 90%+ on build/dependency logs, ~50% on git diffs, 0% on source code).
+    (benchmark fixtures: 93% on build logs, 89% on git diffs, 99% on JSON, 0% on source code).
     Stores the uncompressed raw output in the reversible Breadcrumb store
     and returns an optimized summary with a breadcrumb hash tag [ultron:ref:hash:NL:NB].
     """

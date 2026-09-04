@@ -1,3 +1,14 @@
+"""
+Optional end-to-end eval: answers a question from raw vs pruned input using a
+local Ollama model, then compares the two answers.
+
+This is qualitative and NOT the project's headline benchmark. It needs a local
+Ollama server, and its `precision_pct` measures how many code symbols the two
+model answers share -- so it moves with model sampling variance, not only with
+pruning fidelity. For reproducible pruning numbers use `run_benchmark.py`,
+which is deterministic and needs no model.
+"""
+
 import sys
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -155,8 +166,9 @@ async def run_evaluation():
             "speedup": 1.0
         })
 
-        # Save to benchmark_results.json
-        out_path = os.path.join(os.path.dirname(__file__), "benchmark_results.json")
+        # Kept separate from benchmark_results.json: that file holds the
+        # deterministic run_benchmark.py numbers, these depend on a local model.
+        out_path = os.path.join(os.path.dirname(__file__), "ollama_eval_results.json")
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2)
 
