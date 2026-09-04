@@ -65,17 +65,14 @@ def run_hook():
 
         # Import Ultron core compression engines
         from ultron.core.headroom import headroom
-        from ultron.core.omniroute import omniroute
 
         compressed_text, meta = headroom.compress_tool_output(output_text)
         savings = meta.get("savings_pct", 0.0)
 
         # If significant savings achieved (> 15%)
+        # Accounting is recorded inside headroom.compress_tool_output above,
+        # so every compression path is counted once and only once.
         if savings > 10.0:
-            raw_tokens = max(1, len(output_text) // 4)
-            comp_tokens = max(1, len(compressed_text) // 4)
-            omniroute.record_savings(raw_tokens, comp_tokens)
-
             # Construct schema-compliant replacement matching Claude Code's Zod schemas
             if tool_name == "Bash" or (is_dict and "stdout" in tool_resp):
                 # Claude Code Bash outputSchema:

@@ -125,6 +125,10 @@ class OmniRouteGateway:
         self._save_telemetry()
 
     def get_telemetry(self) -> Dict[str, Any]:
+        # Re-read from disk first. Long-lived processes (the MCP server) load counters
+        # once at __init__, so without this they report startup values forever while
+        # short-lived hook processes keep writing new totals underneath them.
+        self._load_telemetry()
         pct = (self.tokens_saved / self.total_tokens_in * 100) if self.total_tokens_in > 0 else 0.0
         return {
             "total_tokens_in": self.total_tokens_in,

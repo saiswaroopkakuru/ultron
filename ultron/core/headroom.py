@@ -221,7 +221,27 @@ class HeadroomCompressor:
         """
         Universal Entrypoint: Auto-detects content type and applies optimal compression
         for diffs, logs, json, web documents, or normal prose text.
+        Accounting happens here so every caller (PostToolUse hook, MCP tools, CLI)
+        is counted, not just the hook.
         """
+        result, meta = self._dispatch_compression(content)
+        self._record_telemetry(meta)
+        return result, meta
+
+    def _record_telemetry(self, meta: Dict[str, Any]) -> None:
+        """Persists token accounting for any compression that actually shrank the payload."""
+        if meta.get("savings_pct", 0.0) <= 10.0:
+            return
+        try:
+            from ultron.core.omniroute import omniroute
+            raw_tokens = max(1, meta.get("raw_bytes", 0) // 4)
+            comp_tokens = max(1, meta.get("compressed_bytes", 0) // 4)
+            omniroute.record_savings(raw_tokens, comp_tokens)
+        except Exception:
+            # Telemetry must never break the compression path a hook depends on.
+            pass
+
+    def _dispatch_compression(self, content: str) -> Tuple[str, Dict[str, Any]]:
         if len(content) < 120:
             return content, {"savings_pct": 0.0, "raw_bytes": len(content), "compressed_bytes": len(content)}
 
