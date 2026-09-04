@@ -106,6 +106,12 @@ python -m ultron.cli plugins
 On systems where `python` is not on PATH, use `python3`. Inside the virtualenv from
 Quick Start, `ultron status` works as a shorthand for `python -m ultron.cli status`.
 
+`status` reports savings net of recovery. Expanding a breadcrumb undoes its own saving,
+since the model has already paid for the pruned preview and then pays for the original
+too, so those tokens are charged back and the net can go negative. That is the number to
+watch: if it sits near zero, the outputs being pruned are ones the model keeps asking to
+read in full, and pruning them is costing more than it saves.
+
 ---
 
 ## 🌐 Optional: OmniRoute Gateway (Local Model Routing)

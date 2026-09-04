@@ -49,6 +49,7 @@ class BreadcrumbStore:
                     total_pruned_bytes INTEGER DEFAULT 0,
                     tool_calls_intercepted INTEGER DEFAULT 0,
                     expansions_count INTEGER DEFAULT 0,
+                    tokens_expanded INTEGER DEFAULT 0,
                     updated_at REAL NOT NULL
                 )
             """)
@@ -60,6 +61,7 @@ class BreadcrumbStore:
                 ("total_pruned_bytes", "INTEGER DEFAULT 0"),
                 ("tool_calls_intercepted", "INTEGER DEFAULT 0"),
                 ("expansions_count", "INTEGER DEFAULT 0"),
+                ("tokens_expanded", "INTEGER DEFAULT 0"),
             ]:
                 if col not in existing:
                     try:
@@ -120,15 +122,24 @@ class BreadcrumbStore:
             """, (tok_in, tok_saved, raw_bytes, pruned_b, time.time()))
 
     def record_expansion(self, tokens: int):
-        """Records an expansion event."""
+        """
+        Records an expansion and the tokens it cost.
+
+        An expanded breadcrumb undoes its own saving: the model has already paid
+        for the pruned preview, and now pays for the full original as well. The
+        token count is charged against reported savings, so a workflow that keeps
+        asking for originals back reports what it actually costs.
+        """
+        cost = max(0, tokens)
         with self._connect() as conn:
             conn.execute("""
-                INSERT INTO telemetry (id, total_tokens_in, tokens_saved, total_raw_bytes, total_pruned_bytes, tool_calls_intercepted, expansions_count, updated_at)
-                VALUES ('live', 0, 0, 0, 0, 0, 1, ?)
+                INSERT INTO telemetry (id, total_tokens_in, tokens_saved, total_raw_bytes, total_pruned_bytes, tool_calls_intercepted, expansions_count, tokens_expanded, updated_at)
+                VALUES ('live', 0, 0, 0, 0, 0, 1, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     expansions_count = expansions_count + 1,
+                    tokens_expanded = tokens_expanded + excluded.tokens_expanded,
                     updated_at = excluded.updated_at
-            """, (time.time(),))
+            """, (cost, time.time()))
 
     def get_telemetry(self) -> Dict[str, Any]:
         """Returns aggregated telemetry metrics."""
@@ -138,11 +149,18 @@ class BreadcrumbStore:
             row = cur.fetchone()
             if row:
                 t_in = row["total_tokens_in"]
-                t_saved = row["tokens_saved"]
-                pct = round((t_saved / t_in * 100), 1) if t_in > 0 else 0.0
+                gross = row["tokens_saved"]
+                expanded = row["tokens_expanded"] if "tokens_expanded" in row.keys() else 0
+                # Net can be negative, and is reported that way. A run whose
+                # originals were mostly read back cost more than it saved, and
+                # rounding that up to zero would hide the one number worth seeing.
+                net = gross - expanded
+                pct = round((net / t_in * 100), 1) if t_in > 0 else 0.0
                 return {
                     "total_tokens_in": t_in,
-                    "tokens_saved": t_saved,
+                    "tokens_saved": net,
+                    "tokens_saved_gross": gross,
+                    "tokens_expanded": expanded,
                     "savings_percentage": pct,
                     "total_raw_bytes": row["total_raw_bytes"],
                     "total_pruned_bytes": row["total_pruned_bytes"],
@@ -152,6 +170,8 @@ class BreadcrumbStore:
             return {
                 "total_tokens_in": 0,
                 "tokens_saved": 0,
+                "tokens_saved_gross": 0,
+                "tokens_expanded": 0,
                 "savings_percentage": 0.0,
                 "total_raw_bytes": 0,
                 "total_pruned_bytes": 0,

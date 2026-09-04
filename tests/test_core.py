@@ -77,6 +77,46 @@ def test_pruner_git_diff_compression():
     assert "new_value = 2" in compressed
     assert "unchanged lines" in compressed
 
+def test_expansions_are_charged_against_savings(tmp_path):
+    """
+    Reading an original back undoes its saving. Net has to reflect that, including
+    when it goes negative, or a workflow that expands everything looks like a win.
+    """
+    from ultron.core.breadcrumb import BreadcrumbStore
+
+    store = BreadcrumbStore(db_path=str(tmp_path / "telemetry.db"))
+    payload = "x" * 40000
+
+    store.record_savings(len(payload), 400)
+    gross = store.get_telemetry()["tokens_saved_gross"]
+    assert gross > 0
+    assert store.get_telemetry()["tokens_saved"] == gross
+
+    hash_key, _ = store.store(payload, content_type="test")
+    store.retrieve(hash_key)
+
+    after = store.get_telemetry()
+    assert after["tokens_expanded"] > 0
+    assert after["tokens_saved"] == gross - after["tokens_expanded"]
+    assert after["tokens_saved"] < gross
+    assert after["expansions_count"] == 1
+
+
+def test_net_savings_may_go_negative(tmp_path):
+    """Expanding more than was ever pruned is a real loss, not a floor at zero."""
+    from ultron.core.breadcrumb import BreadcrumbStore
+
+    store = BreadcrumbStore(db_path=str(tmp_path / "negative.db"))
+    store.record_savings(4000, 3600)
+
+    hash_key, _ = store.store("y" * 40000, content_type="test")
+    store.retrieve(hash_key)
+
+    t = store.get_telemetry()
+    assert t["tokens_saved"] < 0
+    assert t["savings_percentage"] < 0
+
+
 def test_prose_is_passed_through_untouched():
     """
     A resume mentioning pytest under skills was routed to the log pruner and came
