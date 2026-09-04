@@ -143,6 +143,43 @@ def install_claude_integration(proxy_port: int = 8787) -> Dict[str, Any]:
         "env": {"PYTHONPATH": repo_root, "PYTHONUNBUFFERED": "1"}
     }
 
+    # 5. Install Ultron PostToolUse Hook for Automatic Context Slashing
+    hooks_script_dir = CLAUDE_DIR / "scripts" / "hooks"
+    hooks_script_dir.mkdir(parents=True, exist_ok=True)
+    hook_runner_file = hooks_script_dir / "ultron-post-tool.py"
+    hook_runner_code = f'''import sys
+import os
+
+repo_path = r"{repo_root}"
+if repo_path not in sys.path:
+    sys.path.insert(0, repo_path)
+
+from ultron.hooks.post_tool_use import run_hook
+
+if __name__ == "__main__":
+    run_hook()
+'''
+    hook_runner_file.write_text(hook_runner_code, encoding="utf-8")
+
+    post_hooks = settings_data.setdefault("hooks", {}).setdefault("PostToolUse", [])
+    has_ultron_post = False
+    for entry in post_hooks:
+        for h in entry.get("hooks", []):
+            if "ultron" in h.get("command", ""):
+                has_ultron_post = True
+                break
+    if not has_ultron_post:
+        post_hooks.append({
+            "matcher": "Bash|Read|Grep",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": f'python "{str(hook_runner_file).replace(os.sep, "/")}"'
+                }
+            ]
+        })
+
     SETTINGS_FILE.write_text(json.dumps(settings_data, indent=2), encoding="utf-8")
     results["settings_updated"] = True
+    results["hook_installed"] = str(hook_runner_file)
     return results
