@@ -28,8 +28,12 @@ class UltronConfig(BaseModel):
 
     # Core engine switches
     caveman_mode: str = Field(
-        default="adaptive", 
-        description="Caveman mode: 'adaptive' (code-exact, terse prose), 'ultra', 'lite', 'off'"
+        default=os.getenv("CAVEMAN_MODE", "off"), 
+        description=(
+            "Filler-word removal for prose: 'adaptive', 'ultra', 'lite', or 'off'. "
+            "Defaults to 'off'. It removes conversational filler well, but tool output "
+            "is technical text where it measured 0.2-0.4% while still rewriting lossily."
+        )
     )
     headroom_enabled: bool = Field(default=True, description="Enable tool & context compression")
     claudemem_enabled: bool = Field(default=True, description="Enable cross-session persistent memory")

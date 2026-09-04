@@ -15,7 +15,7 @@ from ultron.config import config
 
 mcp = FastMCP(
     "Ultron Optimizer",
-    instructions="Unified 95% Token Optimization, Reversible Breadcrumbs, Persistent Memory, and Karpathy Coding Guidelines Engine."
+    instructions="Reversible tool-output compression, breadcrumb recovery, persistent memory, and Karpathy coding guidelines."
 )
 
 # -----------------
@@ -26,7 +26,7 @@ mcp = FastMCP(
 def ultron_compress_tool_output(content: str, content_type: str = "auto") -> str:
     """
     Compresses heavy tool outputs (build logs, git diffs, test outputs, JSON)
-    by up to 95%. Stores the uncompressed raw output in the reversible Breadcrumb store
+    by 90%+ when the output is repetitive, less otherwise. Stores the uncompressed raw output in the reversible Breadcrumb store
     and returns the optimized summary with a breadcrumb hash tag [ultron:ref:...].
     """
     compressed, meta = headroom.compress_tool_output(content)

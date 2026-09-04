@@ -8,7 +8,11 @@ class ClaudeMemEngine:
     """
     Persistent Cross-Session Episodic & Semantic Memory (ClaudeMem / CPR).
     Maintains project memory, architectural decisions, recent tasks, and bug fixes.
-    Injects high-relevance semantic deltas (~250 tokens) instead of dumping 20k tokens of raw history.
+
+    Injects only the memories matching the active prompt, which keeps the injection
+    small -- tens of tokens for a handful of stored facts. This is a memory store,
+    not a token optimiser: there is no raw-history dump it replaces, so it should
+    not be credited with a reduction against one.
     """
     def __init__(self, db_path=None):
         self.db_path = str(db_path or config.db_path)

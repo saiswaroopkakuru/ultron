@@ -1,4 +1,4 @@
-# ⚡ Ultron: Unified 95% Token Optimization & Precision Gateway for Claude Code
+# ⚡ Ultron: Reversible Tool-Output Compression & Persistent Memory for Claude Code
 
 <p align="center">
   <a href="https://github.com/your-username/ultron/actions"><img src="https://img.shields.io/badge/CI-Passing-brightgreen?style=flat-square" alt="CI"></a>
@@ -10,8 +10,16 @@
 </p>
 
 <p align="center">
-  <strong>Cut your AI agent token consumption by up to 95% with 100% operational code precision.</strong><br>
-  Combines <em>Caveman</em> (terse output), <em>Headroom/RTK</em> (context & tool output compression), <em>ClaudeMem</em> (persistent cross-session memory), and <em>OmniRoute</em> (quota-aware model routing) into one unified tool.
+  <strong>Compresses repetitive tool output before it reaches the model, and stores the original so nothing is lost.</strong><br>
+  Combines <em>Headroom/RTK</em> (tool output compression), <em>Caveman</em> (optional filler removal), <em>ClaudeMem</em> (persistent cross-session memory), and <em>OmniRoute</em> (quota-aware model routing, proxy only) into one tool.
+</p>
+
+<p align="center">
+  <sub>Reduction depends on how repetitive the input is. Measured on this machine:
+  <strong>98.6%</strong> on a build log, <strong>92.4%</strong> on a dependency listing,
+  <strong>~50%</strong> on a git diff, <strong>~36%</strong> across a mixed set of everyday
+  dev commands, and <strong>0%</strong> on source code, which is passed through byte-identical.
+  Short output is left alone.</sub>
 </p>
 
 ---
@@ -36,7 +44,7 @@ flowchart TD
     
     subgraph Ultron Core Pipeline
         CG["CacheGuard: Prefix Stabilization (Preserves 90% Prompt Cache)"]
-        HR["Headroom + RTK: AST & Tool Output Compression (85-95% Reduction)"]
+        HR["Headroom + RTK: AST & Tool Output Compression (repetition-dependent)"]
         BC["Reversible Breadcrumbs: Content-Addressed Hash Cache (SQLite)"]
         CM["ClaudeMem / CPR: Cross-Session Semantic Delta Memory (~200 Tokens)"]
         CV["Caveman Mode: Zero-Fluff Telegraphic Output (100% Code-Exact)"]
@@ -60,11 +68,20 @@ flowchart TD
 
 | Component | Target Layer | Mechanism | Token Savings | Precision Guarantee |
 | :--- | :--- | :--- | :---: | :---: |
-| **Headroom + RTK** | Input / Tool Results | Compresses terminal logs, git diffs, JSON; emits reversible hash breadcrumbs | **85% – 95%** | Lossless (Hash reversible) |
-| **Caveman Mode** | Output / Explanations | Strips conversational pleasantries and hedging; enforces high-density telegraphic style | **40% – 65%** | 100% Byte-exact code & paths |
-| **ClaudeMem / CPR** | Multi-Turn / Session | SQLite semantic index; injects ~200-token delta memory instead of 20,000+ token raw history | **90% – 95%** | Zero loss of project decisions |
-| **OmniRoute** | Request Routing | Routes diff summarization, linting, & memory jobs to local open-source LLMs ($0 cost) | **100% Cloud Tokens** | Local inference verified |
-| **CacheGuard** | Prompt Caching | Enforces byte-identical static prefixes to protect Anthropic prompt caching discounts | **90% Cost Cut** | Zero cache invalidation |
+| Component | Target Layer | Mechanism | Measured Reduction | Recovery |
+| :--- | :--- | :--- | :---: | :---: |
+| **Headroom + RTK** | Input / Tool Results | Compresses terminal logs, git diffs, JSON; emits reversible hash breadcrumbs | **90%+** on repetitive logs, **~50%** on diffs, **0%** on source | Byte-exact via breadcrumb |
+| **Caveman Mode** | Prose only, opt-in | Strips conversational filler. Effective on chat-style text (~50%), negligible on technical text (0.2–0.4%), so it defaults to `off` | **0%** unless enabled | Byte-exact code & paths |
+| **ClaudeMem / CPR** | Multi-Turn / Session | SQLite store; injects only the memories matching the active prompt | Not a compressor — see note | Zero loss of project decisions |
+| **OmniRoute** | Request Routing | Routes jobs to local open-source LLMs ($0 cost). **Only active behind `ultron start`**; the PostToolUse hook does not route | Cloud tokens avoided, when used | Local inference |
+| **CacheGuard** | Prompt Caching | Enforces byte-identical static prefixes to protect prompt caching | Not independently benchmarked | Zero cache invalidation |
+
+> **On ClaudeMem:** it keeps injections small by selecting only relevant memories, but
+> there is no raw-history dump it replaces, so no reduction percentage is claimed for it.
+>
+> **Methodology:** figures above come from running each compressor over real output on one
+> machine — `git show`, `pip list`, a 20KB build log, and this repository's own source.
+> Your mileage depends entirely on what your tools emit.
 
 ---
 
@@ -120,7 +137,7 @@ Add to `%APPDATA%\Claude\claude_desktop_config.json` (Windows) or `~/Library/App
 ```
 
 ### Available MCP Tools:
-- `ultron_compress_tool_output`: Compresses raw CLI, test, git diff, or JSON output by up to 95%.
+- `ultron_compress_tool_output`: Compresses raw CLI, test, git diff, or JSON output; 90%+ on repetitive logs, less on varied output, nothing on source code.
 - `ultron_expand_breadcrumb`: Reversibly recovers full raw uncompressed content using a hash key `[ultron:ref:...]`.
 - `ultron_recall_memory`: Semantic query over project architecture, past fixes, and conventions.
 - `ultron_save_memory`: Permanently stores decisions and bug solutions in persistent cross-session memory.

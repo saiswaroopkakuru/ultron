@@ -119,7 +119,13 @@ def test_universal_prose_compression():
         "At this point in time, researchers study this carefully. "
         "Please let me know if you need anything else! I hope this helps!"
     )
-    compressed, meta = headroom.compress_tool_output(prose)
+    # Filler removal is off by default, so this test opts in to exercise it.
+    from ultron.config import config
+    previous, config.caveman_mode = config.caveman_mode, "adaptive"
+    try:
+        compressed, meta = headroom.compress_tool_output(prose)
+    finally:
+        config.caveman_mode = previous
     assert meta["savings_pct"] > 20.0
     assert "photosynthesis" in compressed
     assert "plants use sunlight" in compressed

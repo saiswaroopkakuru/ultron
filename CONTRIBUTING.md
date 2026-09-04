@@ -1,6 +1,8 @@
 # Contributing to Ultron
 
-Thank you for your interest in making Ultron even better! Ultron is an open-source project dedicated to cutting token usage by up to 95% while keeping operational code precision at 100%.
+Thank you for your interest in making Ultron even better! Ultron is an open-source project dedicated to cutting token usage on repetitive tool output while keeping operational code byte-exact.
+
+If you change a compressor, please measure it on real output and update the figures in the README rather than rounding them up.
 
 ## Development Setup
 

@@ -1,4 +1,4 @@
-# Ultron: Unified 95% Token Optimization & Precision Gateway
+# Ultron: Reversible Tool-Output Compression & Precision Gateway
 
 This repository contains Ultron, an open-source token optimizer, reversible breadcrumb store, and Karpathy workflow engine.
 
@@ -10,4 +10,4 @@ This repository contains Ultron, an open-source token optimizer, reversible brea
 - `/karpathy-guidelines`: Enforce Andrej Karpathy's 4 core engineering rules.
 
 ## Hooks
-- Native `PostToolUse` hook (`ultron/hooks/post_tool_use.py`) automatically intercepts heavy `Bash`, `Read`, and `Grep` outputs, saving 70% to 95% of prompt tokens without manual intervention.
+- Native `PostToolUse` hook (`ultron/hooks/post_tool_use.py`) automatically intercepts heavy `Bash`, `Read`, and `Grep` outputs. Reduction depends on repetition: 90%+ on build logs, ~50% on diffs, none on source code or short output, which pass through untouched.

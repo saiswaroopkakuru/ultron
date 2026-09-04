@@ -2,6 +2,7 @@ import re
 import json
 from collections import Counter
 from typing import Tuple, Dict, Any
+from ultron.config import config
 from ultron.core.breadcrumb import breadcrumb_store
 from ultron.core.caveman import caveman
 
@@ -28,8 +29,12 @@ class HeadroomCompressor:
     """
     Headroom + RTK + Caveman Universal Context Compression Engine.
     Compresses tool outputs, terminal logs, git diffs, test results,
-    JSON payloads, web documents, and general normal prose/text by up to 95%
-    while keeping reversible breadcrumbs for 100% loss-free recovery.
+    JSON payloads, web documents, and general prose.
+
+    Reduction depends entirely on how repetitive the input is: 90%+ on build logs
+    and dependency listings, roughly 50% on diffs, and nothing on source code,
+    which is passed through byte-identical. Every lossy path stores a reversible
+    breadcrumb first, so the original is always recoverable.
     """
     def __init__(self, max_log_lines: int = 35):
         self.max_log_lines = max_log_lines
@@ -194,8 +199,14 @@ class HeadroomCompressor:
         if raw_len < 120:
             return text, {"savings_pct": 0.0, "raw_bytes": raw_len, "compressed_bytes": raw_len}
 
-        # 1. Apply Caveman fluff & wordy removal
-        compact_prose, meta = caveman.compress_text(text)
+        # 1. Optional filler-word removal, off unless CAVEMAN_MODE says otherwise.
+        # It handles conversational filler well, but tool output is technical text:
+        # measured 0.2% on a commit message and 0.4% on this project's README, in
+        # exchange for a lossy rewrite. Not a trade worth making by default.
+        if config.caveman_mode == "off":
+            compact_prose = text
+        else:
+            compact_prose, _ = caveman.compress_text(text)
 
         # 2. If text is long (> 500 chars), deduplicate repeated lines and compact
         lines = compact_prose.splitlines()

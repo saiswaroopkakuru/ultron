@@ -13,7 +13,7 @@ from ultron.claude.installer import install_claude_integration
 
 @click.group()
 def main():
-    """Ultron: Unified 95% Token Optimization & Precision Gateway for Claude Code."""
+    """Ultron: Reversible tool-output compression & persistent memory for Claude Code."""
     pass
 
 @main.command()
@@ -104,7 +104,10 @@ def status():
             click.echo(f"  * Tokens Returned:        {(expanded or 0):,}  (expansions)")
             click.echo(f"  * Tokens Saved (Net):     {gross - (expanded or 0):,}")
             click.echo(f"  * Token Reduction Ratio:  {row['savings_percentage']}%  (net)")
+            routed = row['requests_anthropic'] + row['requests_ollama'] + row['requests_fallback']
             click.echo(f"  * Requests Routed:        Anthropic: {row['requests_anthropic']} | Ollama: {row['requests_ollama']} | Fallback: {row['requests_fallback']}")
+            if routed == 0:
+                click.echo("      (model routing only runs behind `ultron start`; the PostToolUse hook does not route)")
             click.echo(f"  * Active Local Engine:    {row['active_model']}")
         else:
             click.echo("  * Telemetry: Initializing (no traffic yet)")

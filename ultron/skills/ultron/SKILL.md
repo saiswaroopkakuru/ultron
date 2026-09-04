@@ -1,11 +1,14 @@
 ---
 name: ultron
-description: Unified 95% token optimization, persistent memory, and reversible breadcrumb engine. Triggers on /ultron, /ultron status, /ultron expand <hash>, /ultron recall <query>, /ultron preserve, /compress, or /preserve.
+description: Reversible tool-output compression, persistent memory, and breadcrumb recovery engine. Triggers on /ultron, /ultron status, /ultron expand <hash>, /ultron recall <query>, /ultron preserve, /compress, or /preserve.
 ---
 
 # /ultron - Ultron Token Optimizer & Context Compression Engine
 
-Ultron transparently slashes token consumption by up to 95% while guaranteeing 100% code and symbol precision. It combines:
+Ultron compresses repetitive tool output before it reaches the model and stores the original
+so nothing is lost. Reduction depends on the input: 90%+ on build logs and dependency
+listings, roughly 50% on diffs, and none on source code, which is passed through
+byte-identical. It combines:
 1. **Reversible Breadcrumbs**: Large terminal logs, webpack traces, and git diffs are compacted into lightweight tags like `[ultron:ref:hash:NL:NB]`. Full raw output is stored in SQLite at `~/.ultron/memory.db` and can be expanded on-demand with zero loss.
 2. **Persistent Cross-Session Memory**: Architectural decisions and bug fixes are stored in SQLite and queried via BM25 retrieval (~200 token injection vs 20k token history dumps).
 3. **Smart Multi-Model Gateway & Telemetry**: Offloads summarization and indexing tasks to local Ollama (zero API tokens) and tracks live token savings.
@@ -66,4 +69,4 @@ Compress a massive log file, diff, or text snippet.
 If other memory systems are present:
 - **Project Memory (`~/.claude/projects/.../memory/`)**: Handles static developer preferences and high-level file descriptions.
 - **`claude-mem` / `@modelcontextprotocol/server-memory`**: Handles entity/relation graphs.
-- **`ultron`**: The heavy-data optimizer. Ultron stores raw blobs (diffs, test outputs, compiler traces) out-of-band in SQLite and replaces them with breadcrumbs, cutting prompt token consumption by up to 95%.
+- **`ultron`**: The heavy-data optimizer. Ultron stores raw blobs (diffs, test outputs, compiler traces) out-of-band in SQLite and replaces them with breadcrumbs, cutting prompt token consumption sharply when that output is repetitive.

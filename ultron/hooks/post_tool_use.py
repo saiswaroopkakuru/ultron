@@ -10,7 +10,9 @@ def run_hook():
     so replacements are never rejected by e.outputSchema.safeParse().
     Stashes bulky logs, test runs, and diffs to SQLite breadcrumb store,
     returning a lightweight preview + [ultron:ref:hash:NL:NB] breadcrumb tag.
-    Slashes real Claude Code context consumption by up to 95%.
+    Reduction tracks how repetitive the output is: 90%+ for build logs and
+    dependency listings, ~50% for diffs, none for source code or short output,
+    which pass through untouched.
     """
     try:
         raw = sys.stdin.read()
