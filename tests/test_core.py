@@ -110,3 +110,18 @@ def test_karpathy_review_and_compact():
 
     compact_msg = ultron_strategic_compact_check(tool_invocations_count=45, threshold=40)
     assert "STRATEGIC COMPACTION RECOMMENDED" in compact_msg
+
+def test_universal_prose_compression():
+    prose = (
+        "Certainly! I would be happy to help with that. In order to understand photosynthesis, "
+        "it is important to keep in mind that plants use sunlight, water, and carbon dioxide. "
+        "Due to the fact that plants are autotrophs, they produce their own food. "
+        "At this point in time, researchers study this carefully. "
+        "Please let me know if you need anything else! I hope this helps!"
+    )
+    compressed, meta = headroom.compress_tool_output(prose)
+    assert meta["savings_pct"] > 20.0
+    assert "photosynthesis" in compressed
+    assert "plants use sunlight" in compressed
+    assert "Certainly" not in compressed
+    assert "Please let me know" not in compressed

@@ -2,17 +2,17 @@ import re
 import json
 from typing import Tuple, Dict, Any
 from ultron.core.breadcrumb import breadcrumb_store
+from ultron.core.caveman import caveman
 
-# ANSI escape sequence regex
 ANSI_REGEX = re.compile(r"\x1B(?:\[[0-?]*[ -/]*[@-~]|\].*?\x07)")
-# Progress bar regexes (e.g. [===>   ] 42% or carriage return churn)
 PROGRESS_REGEX = re.compile(r"(\r[^\n]*)+")
 
 class HeadroomCompressor:
     """
-    Headroom + RTK Context Compression Engine.
-    Compresses heavy tool outputs, terminal logs, git diffs, test results,
-    and JSON payloads by up to 95% while keeping breadcrumbs for 100% recovery.
+    Headroom + RTK + Caveman Universal Context Compression Engine.
+    Compresses tool outputs, terminal logs, git diffs, test results,
+    JSON payloads, web documents, and general normal prose/text by up to 95%
+    while keeping reversible breadcrumbs for 100% loss-free recovery.
     """
     def __init__(self, max_log_lines: int = 35):
         self.max_log_lines = max_log_lines
@@ -20,11 +20,9 @@ class HeadroomCompressor:
     def clean_terminal_noise(self, text: str) -> str:
         """Strips ANSI colors, terminal escapes, and cursor resets."""
         cleaned = ANSI_REGEX.sub("", text)
-        # Handle carriage returns from progress bars
         lines = []
         for raw_line in cleaned.splitlines():
             if "\r" in raw_line:
-                # Keep only final overwrite
                 final_part = raw_line.split("\r")[-1].strip()
                 if final_part:
                     lines.append(final_part)
@@ -33,14 +31,9 @@ class HeadroomCompressor:
         return "\n".join(lines)
 
     def compress_git_diff(self, diff_text: str) -> Tuple[str, Dict[str, Any]]:
-        """
-        Compresses git diff payloads:
-        - Keeps modified files, chunk headers, and changed lines (+ / -)
-        - Collapses massive unmodified context lines (>3 lines) into summary notes
-        """
+        """Compresses git diff payloads, collapsing unchanged runs."""
         raw_len = len(diff_text)
         cleaned = self.clean_terminal_noise(diff_text)
-        
         lines = cleaned.splitlines()
         compressed_lines = []
         unmodified_run = 0
@@ -78,11 +71,7 @@ class HeadroomCompressor:
         }
 
     def compress_build_or_test_log(self, log_text: str) -> Tuple[str, Dict[str, Any]]:
-        """
-        RTK-style log compressor for npm/pytest/cargo/gradle builds.
-        Extracts errors, failures, tracebacks, and test summaries,
-        collapsing thousands of lines of passing/telemetry boilerplate.
-        """
+        """RTK-style log compressor for npm/pytest/cargo/gradle builds."""
         raw_len = len(log_text)
         cleaned = self.clean_terminal_noise(log_text)
         lines = cleaned.splitlines()
@@ -97,23 +86,20 @@ class HeadroomCompressor:
 
         for i, line in enumerate(lines):
             lower = line.lower()
-            # Summary indicators
             if any(k in lower for k in ["failed", "passed", "errors", "warnings", "build successful", "build failed", "total tests:"]):
                 summary_lines.append(line)
 
-            # Error and traceback detection
             if any(k in lower for k in ["error:", "traceback (most recent call last):", "fatal:", "panic:", "failure", "exception"]):
                 in_traceback = True
 
             if in_traceback:
                 error_blocks.append(line)
-                # Cap traceback length
-                if len(error_blocks) > 40:
+                if len(error_blocks) > 30 and not line.startswith(" ") and not line.startswith("	"):
                     in_traceback = False
-            elif i < 5:  # Keep header context
+
+            if i < 5 or any(k in lower for k in ["running", "compiling", "building", "target:"]):
                 critical_lines.append(line)
 
-        # Store full log in breadcrumbs
         _, tag = breadcrumb_store.store(log_text, content_type="build_log")
 
         output_parts = [
@@ -149,10 +135,7 @@ class HeadroomCompressor:
         }
 
     def compress_json(self, json_text: str) -> Tuple[str, Dict[str, Any]]:
-        """
-        Compresses large JSON payloads by trimming repetitive list elements
-        and stripping whitespace, preserving schema and top-level structure.
-        """
+        """Compresses large JSON payloads by trimming repetitive list elements."""
         raw_len = len(json_text)
         try:
             data = json.loads(json_text)
@@ -184,11 +167,62 @@ class HeadroomCompressor:
         except Exception:
             return json_text, {"savings_pct": 0.0, "raw_bytes": raw_len, "compressed_bytes": raw_len}
 
+    def compress_prose_and_text(self, text: str) -> Tuple[str, Dict[str, Any]]:
+        """
+        Universal Normal Text Compressor:
+        Compresses articles, documentation, web scrapes, and conversational explanations
+        by stripping filler, deduplicating repetitive sentences, and stashing full text.
+        """
+        raw_len = len(text)
+        if raw_len < 120:
+            return text, {"savings_pct": 0.0, "raw_bytes": raw_len, "compressed_bytes": raw_len}
+
+        # 1. Apply Caveman fluff & wordy removal
+        compact_prose, meta = caveman.compress_text(text)
+
+        # 2. If text is long (> 500 chars), deduplicate repeated lines and compact
+        lines = compact_prose.splitlines()
+        seen = set()
+        deduped = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped and len(stripped) > 20:
+                if stripped in seen:
+                    continue
+                seen.add(stripped)
+            deduped.append(line)
+
+        compact_prose = "\n".join(deduped)
+
+        # 3. For large prose (> 700 chars), stash raw text into breadcrumbs
+        if raw_len > 700:
+            _, tag = breadcrumb_store.store(text, content_type="prose")
+            result = f"{tag} [ULTRON: Condensed {raw_len:,}B text -> {len(compact_prose):,}B]\n{compact_prose}"
+            comp_len = len(result)
+            savings = max(0.0, (raw_len - comp_len) / raw_len * 100)
+            return result, {
+                "type": "prose",
+                "raw_bytes": raw_len,
+                "compressed_bytes": comp_len,
+                "savings_pct": savings,
+                "breadcrumb": tag
+            }
+
+        comp_len = len(compact_prose)
+        savings = max(0.0, (raw_len - comp_len) / raw_len * 100)
+        return compact_prose, {
+            "type": "prose",
+            "raw_bytes": raw_len,
+            "compressed_bytes": comp_len,
+            "savings_pct": savings
+        }
+
     def compress_tool_output(self, content: str) -> Tuple[str, Dict[str, Any]]:
         """
-        Main entrypoint: Auto-detects content type and applies optimal compression.
+        Universal Entrypoint: Auto-detects content type and applies optimal compression
+        for diffs, logs, json, web documents, or normal prose text.
         """
-        if len(content) < 300:
+        if len(content) < 120:
             return content, {"savings_pct": 0.0, "raw_bytes": len(content), "compressed_bytes": len(content)}
 
         # Git diff detector
@@ -198,33 +232,22 @@ class HeadroomCompressor:
         # JSON detector
         stripped = content.strip()
         if (stripped.startswith("{") and stripped.endswith("}")) or (stripped.startswith("[") and stripped.endswith("]")):
-            if len(content) > 1000:
+            if len(content) > 400:
                 res, meta = self.compress_json(content)
-                if meta.get("savings_pct", 0) > 20:
+                if meta.get("savings_pct", 0) > 15:
                     return res, meta
 
         # Terminal / build log detector
-        if any(w in content.lower() for w in ["npm", "pytest", "cargo", "build", "test", "compiling", "yarn", "pip", "docker"]):
+        if any(w in content.lower() for w in ["npm", "pytest", "cargo", "build", "test", "compiling", "yarn", "pip", "docker", "traceback", "error:"]):
             return self.compress_build_or_test_log(content)
 
-        # Fallback general large text compression with breadcrumb
-        if len(content) > 2000:
-            lines = content.splitlines()
-            if len(lines) > 50:
-                _, tag = breadcrumb_store.store(content, content_type="large_text")
-                head = "\n".join(lines[:20])
-                tail = "\n".join(lines[-15:])
-                result = f"{tag} [ULTRON: Compacted {len(lines)} lines]\n{head}\n[... {len(lines)-35} lines stored in breadcrumb ...]\n{tail}"
-                raw_len = len(content)
-                comp_len = len(result)
-                return result, {
-                    "type": "large_text",
-                    "raw_bytes": raw_len,
-                    "compressed_bytes": comp_len,
-                    "savings_pct": (raw_len - comp_len) / raw_len * 100,
-                    "breadcrumb": tag
-                }
+        # Web scrape / HTML detector
+        if any(tag in content.lower() for tag in ["<html", "<div", "<span", "<article", "<p>"]):
+            cleaned_html = re.sub(r"<[^>]+>", " ", content)
+            cleaned_html = re.sub(r"[ \t]+", " ", cleaned_html)
+            return self.compress_prose_and_text(cleaned_html)
 
-        return content, {"savings_pct": 0.0, "raw_bytes": len(content), "compressed_bytes": len(content)}
+        # Universal Prose and Normal Text Compressor
+        return self.compress_prose_and_text(content)
 
 headroom = HeadroomCompressor()

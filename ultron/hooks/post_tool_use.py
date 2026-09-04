@@ -56,7 +56,7 @@ def run_hook():
             output_text = str(tool_resp)
 
         # Skip compression for trivial or short outputs
-        if len(output_text) < 350 and output_text.count("\n") < 15:
+        if len(output_text) < 120:
             sys.exit(0)
 
         # Don't re-compress if already contains an ultron breadcrumb
@@ -71,7 +71,7 @@ def run_hook():
         savings = meta.get("savings_pct", 0.0)
 
         # If significant savings achieved (> 15%)
-        if savings > 15.0:
+        if savings > 10.0:
             raw_tokens = max(1, len(output_text) // 4)
             comp_tokens = max(1, len(compressed_text) // 4)
             omniroute.record_savings(raw_tokens, comp_tokens)
