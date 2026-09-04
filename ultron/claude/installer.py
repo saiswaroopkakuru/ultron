@@ -6,31 +6,84 @@ from typing import Dict, Any
 
 CLAUDE_DIR = Path(os.path.expanduser("~/.claude"))
 SETTINGS_FILE = CLAUDE_DIR / "settings.json"
+CLAUDE_JSON_FILE = Path(os.path.expanduser("~/.claude.json"))
 SKILLS_DIR = CLAUDE_DIR / "skills"
 PACKAGE_SKILLS_DIR = Path(__file__).parent.parent / "skills"
 
 ULTRON_SKILL_MD = """---
 name: ultron
-description: Unified 95% token optimization, persistent memory, and context compression engine.
+description: Unified 95% token optimization, persistent memory, and reversible breadcrumb engine. Triggers on /ultron, /ultron status, /ultron expand <hash>, /ultron recall <query>, /ultron preserve, /compress, or /preserve.
 ---
 
-# Ultron Token Optimizer & Memory Engine
+# /ultron - Ultron Token Optimizer & Context Compression Engine
 
-Ultron transparently cuts token consumption by up to 95% while maintaining 100% code precision.
+Ultron transparently slashes token consumption by up to 95% while guaranteeing 100% code and symbol precision. It combines:
+1. **Reversible Breadcrumbs**: Large terminal logs, webpack traces, and git diffs are compacted into lightweight tags like `[ultron:ref:hash:NL:NB]`. Full raw output is stored in SQLite at `~/.ultron/memory.db` and can be expanded on-demand with zero loss.
+2. **Persistent Cross-Session Memory**: Architectural decisions and bug fixes are stored in SQLite and queried via BM25 retrieval (~200 token injection vs 20k token history dumps).
+3. **Smart Multi-Model Gateway & Telemetry**: Offloads summarization and indexing tasks to local Ollama (zero API tokens) and tracks live token savings.
 
-## Commands Available:
-- `/ultron status` - View live token savings and requests routed
-- `/ultron recall <query>` - Query cross-session memory
-- `/ultron expand <hash>` - Expand a compressed [ultron:ref:...] breadcrumb tag
-- `/compress` - Strategically compact context and preserve key milestones
-- `/preserve` - Checkpoint current session architecture and decisions
-- `/resume` - Restore state from previous project session
-"""
+---
+
+## Instructions for the Assistant When Invoked
+
+When the user types `/ultron` or any subcommand, execute the corresponding action immediately:
+
+### 1. `/ultron` or `/ultron status`
+Display the current live token savings, breadcrumbs, and memories.
+- **If Ultron MCP tools are available**: Call `ultron_get_status()`.
+- **Otherwise (or if running via CLI)**: Execute the shell command:
+  ```powershell
+  python -m ultron.cli status
+  ```
+Format the output cleanly for the user showing total tokens processed, tokens saved, percentage reduction, and the table of recent breadcrumbs.
+
+### 2. `/ultron expand <hash>`
+Expand a stashed breadcrumb back to its original raw output.
+- **If Ultron MCP tools are available**: Call `ultron_expand_breadcrumb(hash_key="<hash>")`.
+- **Otherwise**: Execute:
+  ```powershell
+  python -m ultron.cli expand <hash>
+  ```
+Print the exact raw uncompressed text so the user can inspect it.
+
+### 3. `/ultron recall <query>`
+Query cross-session memories by relevance.
+- **If Ultron MCP tools are available**: Call `ultron_recall_memory(query="<query>")`.
+- **Otherwise**: Execute:
+  ```powershell
+  python -m ultron.cli recall "<query>"
+  ```
+Present the retrieved decisions and context.
+
+### 4. `/ultron preserve <content>` or `/preserve`
+Checkpoint an important architecture decision, bug solution, or milestone to persistent memory.
+- **If Ultron MCP tools are available**: Call `ultron_save_memory(topic="architecture", content="<content>")`.
+- **Otherwise**: Execute:
+  ```powershell
+  python -m ultron.cli preserve "<content>" --topic "architecture"
+  ```
+Confirm to the user that the milestone is saved in `~/.ultron/memory.db`.
+
+### 5. `/ultron compress <target>` or `/compress`
+Compress a massive log file, diff, or text snippet.
+- **If Ultron MCP tools are available**: Call `ultron_compress_tool_output(tool_output="<text>")`.
+- **Otherwise**: Execute:
+  ```powershell
+  python -m ultron.cli compress "<target>"
+  ```
+
+---
+
+## Relationship to Other Memory Systems
+If other memory systems are present:
+- **Project Memory (`~/.claude/projects/.../memory/`)**: Handles static developer preferences and high-level file descriptions.
+- **`claude-mem` / `@modelcontextprotocol/server-memory`**: Handles entity/relation graphs.
+- **`ultron`**: The heavy-data optimizer. Ultron stores raw blobs (diffs, test outputs, compiler traces) out-of-band in SQLite and replaces them with breadcrumbs, cutting prompt token consumption by up to 95%."""
 
 def install_claude_integration(proxy_port: int = 8787) -> Dict[str, Any]:
     """
-    Configures ~/.claude/settings.json and copies all Ultron & Karpathy skills
-    into ~/.claude/skills/ for instant availability in Claude Code.
+    Configures ~/.claude.json, ~/.claude/settings.json, and copies all Ultron
+    & Karpathy skills into ~/.claude/skills/ for instant availability in Claude Code.
     """
     results = {"backup_created": None, "settings_updated": False, "skills_installed": []}
     CLAUDE_DIR.mkdir(parents=True, exist_ok=True)
@@ -42,7 +95,7 @@ def install_claude_integration(proxy_port: int = 8787) -> Dict[str, Any]:
     ultron_skill_path.write_text(ULTRON_SKILL_MD.strip(), encoding="utf-8")
     results["skills_installed"].append("ultron")
 
-    # 2. Copy merged skills: karpathy-guidelines, strategic-compact, verification-loop, etc.
+    # 2. Copy merged skills
     if PACKAGE_SKILLS_DIR.exists():
         for skill_folder in PACKAGE_SKILLS_DIR.iterdir():
             if skill_folder.is_dir():
@@ -52,7 +105,26 @@ def install_claude_integration(proxy_port: int = 8787) -> Dict[str, Any]:
                     shutil.copyfile(item, target_folder / item.name)
                 results["skills_installed"].append(skill_folder.name)
 
-    # 3. Update Settings.json with Ultron MCP Server
+    # 3. Register Ultron MCP in ~/.claude.json
+    python_exe = os.sys.executable
+    repo_root = str(Path(__file__).parent.parent.parent.resolve())
+    if CLAUDE_JSON_FILE.exists():
+        try:
+            claude_cfg = json.loads(CLAUDE_JSON_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            claude_cfg = {}
+        servers = claude_cfg.setdefault("mcpServers", {})
+        servers["ultron"] = {
+            "command": python_exe,
+            "args": ["-m", "ultron.cli", "mcp"],
+            "env": {
+                "PYTHONPATH": repo_root,
+                "PYTHONUNBUFFERED": "1"
+            }
+        }
+        CLAUDE_JSON_FILE.write_text(json.dumps(claude_cfg, indent=2), encoding="utf-8")
+
+    # 4. Update ~/.claude/settings.json
     if SETTINGS_FILE.exists():
         backup_file = CLAUDE_DIR / "settings.json.bak-ultron"
         shutil.copyfile(SETTINGS_FILE, backup_file)
@@ -65,11 +137,10 @@ def install_claude_integration(proxy_port: int = 8787) -> Dict[str, Any]:
         settings_data = {}
 
     mcp_servers = settings_data.setdefault("mcpServers", {})
-    python_exe = os.sys.executable
     mcp_servers["ultron"] = {
         "command": python_exe,
         "args": ["-m", "ultron.cli", "mcp"],
-        "env": {"PYTHONUNBUFFERED": "1"}
+        "env": {"PYTHONPATH": repo_root, "PYTHONUNBUFFERED": "1"}
     }
 
     SETTINGS_FILE.write_text(json.dumps(settings_data, indent=2), encoding="utf-8")
