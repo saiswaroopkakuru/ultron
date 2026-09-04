@@ -30,8 +30,11 @@ class PrunerEngine:
     Reduction tracks how repetitive the input is: 90%+ on build logs, less on
     diffs, and none on source code, which is passed through byte-identical.
     """
-    def __init__(self, max_log_lines: int = 35):
+    def __init__(self, max_log_lines: int = 35, store=None):
         self.max_log_lines = max_log_lines
+        # Injectable so benchmarks and tests can write to a throwaway DB instead
+        # of the user's live telemetry. Defaults to the process-wide store.
+        self.store = store or breadcrumb_store
 
     def clean_terminal_noise(self, text: str) -> str:
         """Strips ANSI colors, terminal escapes, and carriage return progress loops."""
@@ -75,7 +78,7 @@ class PrunerEngine:
             compressed_lines.append(f"  [... {unmodified_run} unchanged lines ...]")
 
         compressed_text = "\n".join(compressed_lines)
-        _, tag = breadcrumb_store.store(diff_text, content_type="git_diff")
+        _, tag = self.store.store(diff_text, content_type="git_diff")
         
         result_text = f"{tag}\n{compressed_text}"
         comp_len = len(result_text)
@@ -123,7 +126,7 @@ class PrunerEngine:
             if i < 5 or any(k in lower for k in ["running", "compiling", "building", "target:"]):
                 critical_lines.append(line)
 
-        _, tag = breadcrumb_store.store(log_text, content_type="build_log")
+        _, tag = self.store.store(log_text, content_type="build_log")
 
         output_parts = [
             f"{tag} [ULTRON: Pruned {len(lines)} lines -> {len(critical_lines) + len(error_blocks) + len(summary_lines)} lines]",
@@ -162,7 +165,7 @@ class PrunerEngine:
         raw_len = len(json_text)
         try:
             data = json.loads(json_text)
-            _, tag = breadcrumb_store.store(json_text, content_type="json")
+            _, tag = self.store.store(json_text, content_type="json")
 
             def _prune(obj, depth=0):
                 if depth > 4:
@@ -213,7 +216,7 @@ class PrunerEngine:
         compact_text = "\n".join(deduped)
 
         if raw_len > 700:
-            _, tag = breadcrumb_store.store(text, content_type="text_document")
+            _, tag = self.store.store(text, content_type="text_document")
             result = f"{tag} [ULTRON: Condensed {raw_len:,}B -> {len(compact_text):,}B]\n{compact_text}"
             comp_len = len(result)
             savings_pct = max(0.0, (raw_len - comp_len) / raw_len * 100) if raw_len > 0 else 0.0
@@ -282,7 +285,7 @@ class PrunerEngine:
 
         if meta.get("savings_pct", 0.0) > 0:
             try:
-                breadcrumb_store.record_savings(meta["raw_bytes"], meta["compressed_bytes"])
+                self.store.record_savings(meta["raw_bytes"], meta["compressed_bytes"])
             except Exception:
                 pass
 

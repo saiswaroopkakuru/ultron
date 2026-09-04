@@ -125,11 +125,29 @@ def install_claude_integration(proxy_port: int = 8787) -> Dict[str, Any]:
         "env": {"PYTHONPATH": repo_root, "PYTHONUNBUFFERED": "1"}
     }
 
-    # 5. Install Ultron PostToolUse Hook for Automatic Context Slashing
+    # 5. Install Ultron Hooks (PreToolUse for Execution Pruning + PostToolUse for Context Guidance)
     hooks_script_dir = CLAUDE_DIR / "scripts" / "hooks"
     hooks_script_dir.mkdir(parents=True, exist_ok=True)
-    hook_runner_file = hooks_script_dir / "ultron-post-tool.py"
-    hook_runner_code = f'''import sys
+    
+    # Pre-tool hook: Rewrites heavy commands to python -m ultron.runner
+    pre_hook_file = hooks_script_dir / "ultron-pre-tool.py"
+    pre_hook_code = f'''import sys
+import os
+
+repo_path = r"{repo_root}"
+if repo_path not in sys.path:
+    sys.path.insert(0, repo_path)
+
+from ultron.hooks.pre_tool_use import run_hook
+
+if __name__ == "__main__":
+    run_hook()
+'''
+    pre_hook_file.write_text(pre_hook_code, encoding="utf-8")
+
+    # Post-tool hook: Injects skill hints and breadcrumb references via additionalContext
+    post_hook_file = hooks_script_dir / "ultron-post-tool.py"
+    post_hook_code = f'''import sys
 import os
 
 repo_path = r"{repo_root}"
@@ -141,13 +159,37 @@ from ultron.hooks.post_tool_use import run_hook
 if __name__ == "__main__":
     run_hook()
 '''
-    hook_runner_file.write_text(hook_runner_code, encoding="utf-8")
+    post_hook_file.write_text(post_hook_code, encoding="utf-8")
 
+    # Wire PreToolUse for Bash
+    pre_hooks = settings_data.setdefault("hooks", {}).setdefault("PreToolUse", [])
+    has_ultron_pre = False
+    for entry in pre_hooks:
+        for h in entry.get("hooks", []):
+            if "ultron" in h.get("command", ""):
+                # Update command to use new ultron-pre-tool.py
+                h["command"] = f'python "{str(pre_hook_file).replace(os.sep, "/")}"'
+                has_ultron_pre = True
+                break
+    if not has_ultron_pre:
+        pre_hooks.append({
+            "matcher": "Bash",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": f'python "{str(pre_hook_file).replace(os.sep, "/")}"',
+                    "timeout": 10
+                }
+            ]
+        })
+
+    # Wire PostToolUse for Bash|Read|Grep
     post_hooks = settings_data.setdefault("hooks", {}).setdefault("PostToolUse", [])
     has_ultron_post = False
     for entry in post_hooks:
         for h in entry.get("hooks", []):
             if "ultron" in h.get("command", ""):
+                h["command"] = f'python "{str(post_hook_file).replace(os.sep, "/")}"'
                 has_ultron_post = True
                 break
     if not has_ultron_post:
@@ -156,12 +198,13 @@ if __name__ == "__main__":
             "hooks": [
                 {
                     "type": "command",
-                    "command": f'python "{str(hook_runner_file).replace(os.sep, "/")}"'
+                    "command": f'python "{str(post_hook_file).replace(os.sep, "/")}"'
                 }
             ]
         })
 
     SETTINGS_FILE.write_text(json.dumps(settings_data, indent=2), encoding="utf-8")
     results["settings_updated"] = True
-    results["hook_installed"] = str(hook_runner_file)
+    results["pre_hook_installed"] = str(pre_hook_file)
+    results["post_hook_installed"] = str(post_hook_file)
     return results

@@ -2,6 +2,7 @@ import hashlib
 import time
 import sqlite3
 import re
+from contextlib import contextmanager
 from typing import Optional, Tuple, Dict, Any
 from ultron.config import config
 
@@ -15,8 +16,19 @@ class BreadcrumbStore:
         self.db_path = str(db_path or config.db_path)
         self._init_db()
 
+    @contextmanager
+    def _connect(self):
+        # sqlite3's own context manager commits but never closes, which pins the
+        # file open. On Windows that blocks deleting a benchmark's temp dir.
+        conn = sqlite3.connect(self.db_path)
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
+
     def _init_db(self):
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS breadcrumbs (
                     hash_key TEXT PRIMARY KEY,
@@ -65,7 +77,7 @@ class BreadcrumbStore:
         line_count = content.count("\n") + 1
         byte_len = len(content_bytes)
 
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO breadcrumbs 
@@ -84,7 +96,7 @@ class BreadcrumbStore:
         tok_saved = max(0, (raw_bytes - comp_bytes) // 4)
         pruned_b = max(0, raw_bytes - comp_bytes)
 
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             conn.execute("""
                 INSERT INTO telemetry (id, total_tokens_in, tokens_saved, total_raw_bytes, total_pruned_bytes, tool_calls_intercepted, expansions_count, updated_at)
                 VALUES ('live', ?, ?, ?, ?, 1, 0, ?)
@@ -99,7 +111,7 @@ class BreadcrumbStore:
 
     def record_expansion(self, tokens: int):
         """Records an expansion event."""
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             conn.execute("""
                 INSERT INTO telemetry (id, total_tokens_in, tokens_saved, total_raw_bytes, total_pruned_bytes, tool_calls_intercepted, expansions_count, updated_at)
                 VALUES ('live', 0, 0, 0, 0, 0, 1, ?)
@@ -110,7 +122,7 @@ class BreadcrumbStore:
 
     def get_telemetry(self) -> Dict[str, Any]:
         """Returns aggregated telemetry metrics."""
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             conn.row_factory = sqlite3.Row
             cur = conn.execute("SELECT * FROM telemetry WHERE id = 'live'")
             row = cur.fetchone()
@@ -142,7 +154,7 @@ class BreadcrumbStore:
         Retrieves raw uncompressed content by short hash.
         """
         clean_key = hash_key.replace("ultron:ref:", "").split(":")[0]
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             cur = conn.execute("SELECT raw_content FROM breadcrumbs WHERE hash_key = ?", (clean_key,))
             row = cur.fetchone()
 
@@ -168,7 +180,7 @@ class BreadcrumbStore:
     def prune_old_breadcrumbs(self, days: int = 7) -> int:
         """Deletes breadcrumbs older than the specified days."""
         cutoff = time.time() - (days * 86400)
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             cur = conn.execute("DELETE FROM breadcrumbs WHERE created_at < ?", (cutoff,))
             return cur.rowcount
 

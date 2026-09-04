@@ -130,8 +130,31 @@ def plugins():
         click.echo(f"  - {s}")
     click.echo()
 
+@click.command()
+@click.option("--breadcrumbs", is_flag=True, help="Also delete every stored breadcrumb (raw output is unrecoverable afterwards).")
+@click.confirmation_option(prompt="Zero Ultron telemetry counters?")
+def reset(breadcrumbs):
+    """Zero the live telemetry counters. Use after a config change makes past numbers meaningless."""
+    import sqlite3
+    with sqlite3.connect(breadcrumb_store.db_path) as conn:
+        conn.execute("""
+            UPDATE telemetry SET total_tokens_in = 0, tokens_saved = 0, savings_percentage = 0.0,
+                   tokens_expanded = 0, total_raw_bytes = 0, total_pruned_bytes = 0,
+                   tool_calls_intercepted = 0, expansions_count = 0, updated_at = ?
+            WHERE id = 'live'
+        """, (datetime.now().timestamp(),))
+        removed = 0
+        if breadcrumbs:
+            removed = conn.execute("SELECT COUNT(*) FROM breadcrumbs").fetchone()[0]
+            conn.execute("DELETE FROM breadcrumbs")
+    click.echo(click.style("Telemetry counters zeroed.", fg="green"))
+    if breadcrumbs:
+        click.echo(click.style(f"Deleted {removed:,} breadcrumbs.", fg="yellow"))
+
+
 main.add_command(mcp)
 main.add_command(status)
+main.add_command(reset)
 main.add_command(expand)
 main.add_command(compress)
 main.add_command(clean)

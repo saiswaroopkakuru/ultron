@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ultron"
 version = "1.0.0"
-description = "Unified 95% Token Optimization & Precision Gateway for Claude Code & LLM Agents"
+description = "Context-Aware Plugin Router, In-Process Context Pruner & SQLite Breadcrumb Store for Claude Code"
 authors = [{ name = "Sai Reddy" }]
 readme = "README.md"
 requires-python = ">=3.10"

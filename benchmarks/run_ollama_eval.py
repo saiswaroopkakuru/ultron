@@ -61,7 +61,7 @@ async def run_evaluation():
     with tempfile.TemporaryDirectory() as tmpdir:
         bench_db_path = os.path.join(tmpdir, "benchmark_memory.db")
         bench_store = BreadcrumbStore(db_path=bench_db_path)
-        bench_pruner = PrunerEngine()
+        bench_pruner = PrunerEngine(store=bench_store)
 
         with open(os.path.join(DATA_DIR, "terminal_build_log.txt"), "r", encoding="utf-8") as f:
             build_log = f.read()
