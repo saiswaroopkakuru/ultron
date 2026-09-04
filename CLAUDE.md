@@ -27,5 +27,5 @@ Ultron dynamically inspects context and orchestrates:
 
 ## Hooks & Execution
 - Native `PreToolUse` hook rewrites shell executions through cross-platform `ultron.runner` to prune stdout at runtime.
-- Native `PostToolUse` hook (`ultron/hooks/post_tool_use.py`) automatically intercepts heavy `Bash`, `Read`, and `Grep` outputs. Reduction is 50%–95% on repetitive logs, test runs, and diffs, while source code passes through byte-identical. Injects contextual skill hints on failures and diffs.
+- Native `PostToolUse` hook (`ultron/hooks/post_tool_use.py`) automatically intercepts heavy `Bash`, `Read`, and `Grep` outputs. Measured reduction: 90%+ on build/dependency logs, ~50% on git diffs, and 0% on source code, which passes through byte-identical. Injects contextual skill hints on failures and diffs.
 
