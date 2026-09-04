@@ -1,5 +1,6 @@
 import sys
 import os
+import shlex
 import subprocess
 from ultron.core.pruner import pruner
 from ultron.core.breadcrumb import breadcrumb_store
@@ -17,7 +18,7 @@ def run():
 
     # Reconstruct command preserving quoted arguments
     args = sys.argv[2:] if sys.argv[1] == "--" else sys.argv[1:]
-    raw_cmd = subprocess.list2cmdline(args)
+    raw_cmd = subprocess.list2cmdline(args) if os.name == "nt" else shlex.join(args)
 
     if not raw_cmd.strip():
         sys.exit(0)

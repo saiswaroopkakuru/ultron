@@ -20,6 +20,34 @@ def test_breadcrumb_store():
     assert sample_text in expanded
     assert "[ultron:ref:" not in expanded
 
+def test_breadcrumb_collision_extends_key_without_data_loss():
+    import sqlite3
+    fake_prefix = "deadbeef"
+    original_content = "original content that must survive"
+    with breadcrumb_store._connect() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO breadcrumbs (hash_key, raw_content, char_len, line_count, content_type, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (fake_prefix, original_content, len(original_content), 1, "test", 0.0)
+        )
+
+    import ultron.core.breadcrumb as bc_module
+    real_sha256 = bc_module.hashlib.sha256
+    class _FakeDigest:
+        def __init__(self, real): self._real = real
+        def hexdigest(self):
+            return fake_prefix + self._real.hexdigest()[8:]
+    bc_module.hashlib.sha256 = lambda data: _FakeDigest(real_sha256(data))
+    try:
+        colliding_content = "different content that collides on the short prefix"
+        new_key, tag = breadcrumb_store.store(colliding_content, content_type="test")
+    finally:
+        bc_module.hashlib.sha256 = real_sha256
+
+    assert new_key != fake_prefix
+    assert breadcrumb_store.retrieve(fake_prefix) == original_content
+    assert breadcrumb_store.retrieve(new_key) == colliding_content
+
 def test_pruner_terminal_and_build_compression():
     lines = [f"[webpack] building module {i}... [ok]" for i in range(100)]
     lines.append("ERROR: src/api/user.ts(42,10): Property 'id' does not exist on type 'User'.")
@@ -102,8 +130,18 @@ def test_karpathy_review_and_compact():
     compact_msg = ultron_strategic_compact_check(tool_invocations_count=45, threshold=40)
     assert "STRATEGIC COMPACTION RECOMMENDED" in compact_msg
 
-def test_context_router():
+    below_threshold_msg = ultron_strategic_compact_check(tool_invocations_count=10, threshold=40)
+    assert isinstance(below_threshold_msg, str)
+    assert "STRATEGIC COMPACTION RECOMMENDED" not in below_threshold_msg
+
+def test_context_router(monkeypatch):
     from ultron.core.router import router
+
+    monkeypatch.setattr(
+        router, "_skills_cache",
+        ["karpathy-guidelines", "security-guardrails", "strategic-compact",
+         "tdd-workflow", "ultron", "verification-loop"]
+    )
 
     # Test memory routing
     res_mem = router.route_context("What did we configure for database connection pooling last time?")

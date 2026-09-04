@@ -155,6 +155,11 @@ def ultron_strategic_compact_check(tool_invocations_count: int, threshold: int =
             f"If you have completed your current milestone (e.g. finished planning or passed tests),\n"
             f"run '/compact' to reset context cleanly at a natural boundary."
         )
+    return (
+        f"[No compaction needed]: {tool_invocations_count}/{threshold} tool calls used. "
+        f"Continue current work."
+    )
+
 @mcp.tool()
 def ultron_cl4r1t4s_scaffold(mode: str = "frontier_unified") -> str:
     """

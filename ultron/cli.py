@@ -138,8 +138,8 @@ def reset(breadcrumbs):
     import sqlite3
     with sqlite3.connect(breadcrumb_store.db_path) as conn:
         conn.execute("""
-            UPDATE telemetry SET total_tokens_in = 0, tokens_saved = 0, savings_percentage = 0.0,
-                   tokens_expanded = 0, total_raw_bytes = 0, total_pruned_bytes = 0,
+            UPDATE telemetry SET total_tokens_in = 0, tokens_saved = 0,
+                   total_raw_bytes = 0, total_pruned_bytes = 0,
                    tool_calls_intercepted = 0, expansions_count = 0, updated_at = ?
             WHERE id = 'live'
         """, (datetime.now().timestamp(),))

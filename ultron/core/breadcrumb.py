@@ -70,14 +70,24 @@ class BreadcrumbStore:
     def store(self, content: str, content_type: str = "text") -> Tuple[str, str]:
         """
         Stores content and returns (hash_key, breadcrumb_tag).
+        Handles prefix collisions by widening the hash prefix without data loss.
         """
         content_bytes = content.encode("utf-8")
         hash_full = hashlib.sha256(content_bytes).hexdigest()
-        hash_short = hash_full[:8]
         line_count = content.count("\n") + 1
         byte_len = len(content_bytes)
 
         with self._connect() as conn:
+            hash_short = hash_full[:8]
+            for prefix_len in (8, 12, 16, 24, 32, 64):
+                hash_short = hash_full[:prefix_len]
+                cur = conn.execute(
+                    "SELECT raw_content FROM breadcrumbs WHERE hash_key = ?", (hash_short,)
+                )
+                row = cur.fetchone()
+                if row is None or row[0] == content:
+                    break
+
             conn.execute(
                 """
                 INSERT OR REPLACE INTO breadcrumbs 

@@ -28,19 +28,19 @@ Existing tools operate either at the **network proxy layer** (requiring TLS cert
 
 Ultron operates **directly at the in-process tool boundary** via Claude Code's native `PostToolUse` hook:
 
-1. **Zero Proxy Latency**: No local HTTP proxies or network redirects. The hook intercepts tool results (`Bash`, `Read`, `Grep`, MCP) right before Claude Code serializes them into context.
+1. **Zero Proxy Latency (hook path)**: The `PostToolUse` hook itself needs no local HTTP proxy or network redirect -- it intercepts tool results (`Bash`, `Read`, `Grep`, MCP) in-process, right before Claude Code serializes them into context. (Ultron separately ships an *optional* local proxy for zero-cost local-model routing, unrelated to pruning -- see the "Optional: OmniRoute Gateway" section below.)
 2. **Deterministic Context Pruning**:
    - **Logs**: Strips ANSI escape codes and progress bars; preserves compiler errors, tracebacks, and summary outcomes while collapsing module compilation spam.
    - **Git Diffs**: Collapses long runs of unchanged context lines (`[... N unchanged lines ...]`), while keeping all hunks (`@@`) and added/removed lines.
    - **JSON**: Prunes repetitive array elements and deeply nested objects.
 3. **Reversible Breadcrumbs**: Full uncompressed tool outputs are stored in a local SQLite database (`~/.ultron/memory.db`) with content-addressed SHA-256 hashes (`[ultron:ref:hash:NL:NB]`).
 4. **100% Byte-Exact Recovery**: If Claude or the developer needs to inspect the full uncompressed log, `/ultron expand <hash>` or MCP tool `ultron_expand_breadcrumb` instantly restores the original text.
-5. **Context-Aware Plugin Router & Skill Dispatcher**: Inspects incoming queries, codebase state, and tool outputs to dynamically orchestrate:
+5. **Context-Aware Plugin Router & Skill Dispatcher**: Classifies incoming query or tool-output text to dynamically recommend:
    - **Headroom / Pruner**: Heavy tool outputs, logs, diffs, JSON payloads.
    - **Caveman**: Model output generation (direct, high density, zero filler, byte-exact entities).
    - **Claude-Mem**: Past session history, architectural decisions, and bug history.
    - **Andrej Karpathy Guidelines**: Code modifications, refactors, and feature design.
-   - **Claude Skills**: Dynamically dispatches to `tdd-workflow`, `verification-loop`, `strategic-compact`, `security-guardrails`, and `graphify`.
+   - **Claude Skills**: Dynamically dispatches to installed skills (`frontier-scaffold`, `tdd-workflow`, `verification-loop`, `strategic-compact`, `security-guardrails`, `graphify`).
 
 ---
 
@@ -93,6 +93,22 @@ python -m ultron.cli compress build.log
 
 # Purge breadcrumbs older than 7 days
 python -m ultron.cli clean --days 7
+```
+
+---
+
+## 🌐 Optional: OmniRoute Gateway (Local Model Routing)
+
+Separate from the in-process pruning hook, `ultron start` runs a local FastAPI server (`ultron/proxy/app.py`) that speaks the Anthropic `/v1/messages` API. `ultron wrap <cmd>` launches a command (default: `claude`) with `ANTHROPIC_BASE_URL` pointed at that server automatically.
+
+By default this reroutes requests to your local Ollama model (`gemma4:26b` or `qwen2.5:0.5b`), running Claude Code at **$0 Anthropic usage credits**:
+
+```powershell
+# Start the gateway (binds 127.0.0.1:8787 by default)
+python -m ultron.cli start --model gemma4:26b
+
+# Launch Claude Code wrapped with zero Anthropic usage credits
+python -m ultron.cli wrap claude
 ```
 
 ---
