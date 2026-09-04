@@ -177,5 +177,53 @@ def test_cl4r1t4s_frontier_scaffolding():
     assert "3-STRIKE LOOP BREAKER" in cursor
     assert "SPECULATIVE BATCH READS" in cursor
 
+def test_omniroute_translation():
+    from ultron.core.omniroute import omniroute
+
+    anthropic_payload = {
+        "model": "claude-3-7-sonnet-20250219",
+        "system": "You are an assistant.",
+        "messages": [
+            {"role": "user", "content": "Run tests"},
+            {
+                "role": "assistant",
+                "content": [
+                    {"type": "tool_use", "id": "toolu_123", "name": "Bash", "input": {"command": "pytest"}}
+                ]
+            },
+            {
+                "role": "user",
+                "content": [
+                    {"type": "tool_result", "tool_use_id": "toolu_123", "content": "12 passed"}
+                ]
+            }
+        ],
+        "tools": [
+            {
+                "name": "Bash",
+                "description": "Run shell command",
+                "input_schema": {"type": "object", "properties": {"command": {"type": "string"}}}
+            }
+        ]
+    }
+
+    ollama_payload = omniroute.translate_anthropic_to_ollama(anthropic_payload)
+    assert len(ollama_payload["messages"]) == 4 # 1 system + 3 messages
+    assert ollama_payload["messages"][0]["role"] == "system"
+    assert "tool_calls" in ollama_payload["messages"][2]
+    assert ollama_payload["tools"][0]["function"]["name"] == "Bash"
+
+def test_proxy_app_routes():
+    from fastapi.testclient import TestClient
+    from ultron.proxy.app import app
+
+    client = TestClient(app)
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "active"
+    assert "telemetry" in data
+
+
 
 

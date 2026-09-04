@@ -7,20 +7,29 @@ class UltronConfig(BaseModel):
     pruner_enabled: bool = Field(default=True, description="Enable tool & context pruner")
     router_enabled: bool = Field(default=True, description="Enable context-aware plugin router")
     cache_guard_enabled: bool = Field(default=True, description="Preserve Anthropic prompt caching")
+    omniroute_enabled: bool = Field(default=True, description="Enable local OmniRoute proxy routing")
+
+    # Proxy Server Settings
+    proxy_host: str = Field(default=os.getenv("ULTRON_HOST", "127.0.0.1"), description="Proxy host")
+    proxy_port: int = Field(default=int(os.getenv("ULTRON_PORT", "8787")), description="Proxy port")
+    anthropic_upstream: str = Field(
+        default=os.getenv("ANTHROPIC_UPSTREAM", "https://api.anthropic.com"),
+        description="Upstream Anthropic endpoint"
+    )
 
     # Compression thresholds
     min_compress_chars: int = Field(default=120, description="Minimum characters before compression triggers")
     max_retained_log_lines: int = Field(default=35, description="Max lines kept for large terminal logs")
     breadcrumb_ttl_seconds: int = Field(default=604800, description="Breadcrumb cache TTL (7 days)")
 
-    # Upstream providers (for benchmark evals)
+    # Upstream providers (Ollama)
     ollama_url: str = Field(
         default=os.getenv("OLLAMA_URL", "http://127.0.0.1:11434"),
-        description="Local Ollama URL for benchmark evaluations"
+        description="Local Ollama URL for zero-cost routing"
     )
     ollama_model: str = Field(
         default=os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b"),
-        description="Local model name for benchmark evaluations"
+        description="Local model name for zero-cost routing"
     )
 
     # Storage paths

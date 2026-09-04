@@ -151,6 +151,41 @@ def reset(breadcrumbs):
     if breadcrumbs:
         click.echo(click.style(f"Deleted {removed:,} breadcrumbs.", fg="yellow"))
 
+@click.command()
+@click.option("--host", default="127.0.0.1", help="Proxy host to bind to")
+@click.option("--port", default=8787, help="Proxy port to bind to")
+@click.option("--model", default=None, help="Ollama model to route to (e.g. gemma4:26b, qwen2.5:0.5b)")
+def start(host, port, model):
+    """Start the Ultron Zero-Cost Local OmniRoute Gateway proxy."""
+    import uvicorn
+    if model:
+        config.ollama_model = model
+    click.echo(click.style(f"\n=== ULTRON OMNIROUTE GATEWAY STARTING ===", fg="cyan", bold=True))
+    click.echo(f"  * Endpoint:     http://{host}:{port}/v1/messages")
+    click.echo(f"  * Local Target: {config.ollama_url} (Model: {config.ollama_model})")
+    click.echo(f"  * Cost:         $0 (Zero Anthropic usage credits)")
+    click.echo(click.style(f"\nTo connect Claude Code, run in another terminal:", fg="yellow"))
+    click.echo(click.style(f"  $env:ANTHROPIC_BASE_URL=\"http://{host}:{port}\"; $env:ANTHROPIC_API_KEY=\"dummy\"; claude\n", fg="green", bold=True))
+    uvicorn.run("ultron.proxy.app:app", host=host, port=port, log_level="info")
+
+@click.command()
+@click.argument("cmd", nargs=-1)
+@click.option("--port", default=8787, help="Proxy port to target")
+def wrap(cmd, port):
+    """Launch a CLI tool (e.g. 'claude') wrapped with the Ultron OmniRoute proxy environment."""
+    import subprocess
+    target_cmd = list(cmd) if cmd else ["claude"]
+    env = os.environ.copy()
+    env["ANTHROPIC_BASE_URL"] = f"http://127.0.0.1:{port}"
+    env["ANTHROPIC_API_KEY"] = "dummy-local-key"
+    
+    click.echo(click.style(f"\n[ULTRON WRAP] Launching '{' '.join(target_cmd)}' pointed to http://127.0.0.1:{port} ($0 usage credits)...", fg="green", bold=True))
+    try:
+        subprocess.run(target_cmd, env=env)
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        click.echo(click.style(f"Error launching command: {e}", fg="red"))
 
 main.add_command(mcp)
 main.add_command(status)
@@ -161,6 +196,9 @@ main.add_command(clean)
 main.add_command(install)
 main.add_command(route)
 main.add_command(plugins)
+main.add_command(start)
+main.add_command(wrap)
 
 if __name__ == "__main__":
     main()
+
