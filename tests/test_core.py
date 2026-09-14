@@ -326,8 +326,9 @@ def test_context_router(monkeypatch):
 
 def test_ultron_runner():
     import subprocess
+    import sys
     proc = subprocess.run(
-        ["python", "-m", "ultron.runner", "--", "python", "-c", "print('hello from runner')"],
+        [sys.executable, "-m", "ultron.runner", "--", sys.executable, "-c", "print('hello from runner')"],
         capture_output=True,
         text=True
     )
